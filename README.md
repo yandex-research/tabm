@@ -1,6 +1,6 @@
 # TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
 
-:scroll: [arXiv](TODO(link))
+<!-- :scroll: [arXiv](TODO(link)) -->
 &nbsp; :books: [RTDL (other projects on tabular DL)](https://github.com/yandex-research/rtdl)
 
 *TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
@@ -9,7 +9,7 @@
 "TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling". -->
 
 > [!IMPORTANT]
-> For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](TODO).
+> For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the paper.
 
 ---
 
