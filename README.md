@@ -419,7 +419,7 @@ it must be named `0.toml` and the name of its parent directory must end with `-e
 For example:
 
 ```
-python bin/evaluate.py exp/<some/path/hello/world>/0-evaluation/0.toml --continue
+python bin/evaluate.py exp/<some/path/hello/world>/0-evaluation --continue
 ```
 
 ## Ensembling
@@ -428,7 +428,7 @@ Use `bin/ensemble.py` to compute metrics for an ensemble of *already trained* mo
 For example, the following command evaluates an ensemble of the evaluated TabM from the previous section:
 
 ```
-python bin/evaluate.py exp/reproduce/tabm/california/0-tuning
+python bin/ensemble.py exp/reproduce/tabm/california/0-evaluation
 ```
 
 ## Automating all of the above
