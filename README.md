@@ -28,7 +28,7 @@ Table of contents
   - [Evaluation](#evaluation)
   - [Ensembling](#ensembling)
   - [Automating all of the above](#automating-all-of-the-above)
-- [Adding new datasets and metrics](#adding-new-datasets-and-metrics)
+- [Adding new datasets](#adding-new-datasets)
 - [How to cite](#how-to-cite)
 
 ---
@@ -444,7 +444,7 @@ cp exp/tabm/california/0-tuning.toml exp/reproduce2/tabm-go/california
 python bin/go.py exp/reproduce/tabm-go/california/0-tuning --continue
 ```
 
-# Adding new datasets and metrics
+# Adding new datasets
 
 New datasets must follow the layout and NumPy data types of the datasets in `data/`.
 A good example is the `data/adult` dataset, because it contains all types of features.
