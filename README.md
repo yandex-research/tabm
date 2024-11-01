@@ -1,6 +1,6 @@
 # TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
 
-<!-- :scroll: [arXiv](TODO(link)) -->
+:scroll: [arXiv](https://arxiv.org/abs/2410.24210)
 &nbsp; :books: [RTDL (other projects on tabular DL)](https://github.com/yandex-research/rtdl)
 
 *TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
@@ -9,7 +9,7 @@
 "TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling". -->
 
 > [!IMPORTANT]
-> For a quick overview, see **the abstract, Figure 1 and Page 7** in the paper.
+> For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](https://arxiv.org/pdf/2410.24210).
 
 ---
 
@@ -154,6 +154,7 @@ year                                    -8.870127    0.011037
 ## Software
 
 **Requirements**
+
 - OS: Linux or macOS.
 - Hardware: GPU is not required, but highly recommended for running compute-heavy pipelines.
 
@@ -179,6 +180,16 @@ pixi run python --version
 
 # On a machine with GPU
 pixi run -e cuda python -m "import torch; print(torch.cuda.is_available())"
+```
+
+Alternatively, if you prefer the Conda-like workflow:
+
+```
+# Activate the CPU-only environment
+pixi shell
+
+# Activate the environment with GPU
+pixi shell -e cuda
 ```
 
 <details>
@@ -468,7 +479,7 @@ Then, create the `data/my-dataset` directory with the following content:
     title={TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling},
     author={Yury Gorishniy and Akim Kotelnikov and Artem Babenko},
     journal={{arXiv}},
-    volume={TODO},
+    volume={2410.24210},
     year={2024},
 }
 ```
