@@ -411,7 +411,7 @@ Use `bin/evaluate.py` to train a model under multiple random seeds.
 For example, the following command evaluates the tuned TabM from the previous section:
 
 ```
-python bin/evaluate.py exp/reproduce/tabm/california/0-tuning --continue
+python bin/evaluate.py exp/reproduce/tabm/california/0-tuning
 ```
 
 To evaluate a manually composed config for `bin/model.py`,
@@ -419,7 +419,7 @@ it must be named `0.toml` and the name of its parent directory must end with `-e
 For example:
 
 ```
-python bin/evaluate.py exp/<some/path/hello/world>/0-evaluation --continue
+python bin/evaluate.py exp/<some/path/hello/world>/0-evaluation
 ```
 
 ## Ensembling
