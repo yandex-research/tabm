@@ -1,0 +1,135 @@
+{
+    "function": "bin.tune.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 0,
+        "function": "bin.model.main",
+        "n_trials": 100,
+        "sampler": {
+            "n_startup_trials": 20
+        },
+        "space": {
+            "seed": 0,
+            "batch_size": 64,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-1-Mercedes_Benz_Greener_Manufacturing",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": [
+                    "_tune_",
+                    "loguniform",
+                    0.0001,
+                    0.005
+                ],
+                "weight_decay": [
+                    "_tune_",
+                    "?loguniform",
+                    0.0,
+                    0.0001,
+                    0.1
+                ]
+            },
+            "model": {
+                "arch_type": "tabm-mini",
+                "k": 32,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": [
+                        "_tune_",
+                        "int",
+                        1,
+                        5
+                    ],
+                    "d_block": [
+                        "_tune_",
+                        "int",
+                        64,
+                        1024,
+                        16
+                    ],
+                    "dropout": [
+                        "_tune_",
+                        "?uniform",
+                        0.0,
+                        0.0,
+                        0.5
+                    ]
+                }
+            }
+        }
+    },
+    "best": {
+        "function": "bin.model.main",
+        "gpus": [
+            "NVIDIA A100-SXM4-80GB"
+        ],
+        "config": {
+            "seed": 0,
+            "batch_size": 64,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-1-Mercedes_Benz_Greener_Manufacturing",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": 0.0036410876263783232,
+                "weight_decay": 0.0
+            },
+            "model": {
+                "arch_type": "tabm-mini",
+                "k": 32,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": 5,
+                    "d_block": 624,
+                    "dropout": 0.4013464326301859
+                }
+            }
+        },
+        "n_parameters": 2057536,
+        "prediction_type": "labels",
+        "epoch_size": 47,
+        "best_step": 1551,
+        "metrics": {
+            "train": {
+                "rmse": 8.388947672634465,
+                "mae": 5.498335361480713,
+                "r2": 0.5636226661678942,
+                "score": -8.388947672634465
+            },
+            "val": {
+                "rmse": 9.141416649078565,
+                "mae": 6.0122270584106445,
+                "r2": 0.5272850056441013,
+                "score": -9.141416649078565
+            },
+            "test": {
+                "rmse": 7.759456648533372,
+                "mae": 5.504356384277344,
+                "r2": 0.6031366122904969,
+                "score": -7.759456648533372
+            }
+        },
+        "time": "0:00:28.471924",
+        "chunk_size": null,
+        "eval_batch_size": 32768,
+        "trial_id": 91,
+        "tuning_time": "0:28:25.036520"
+    },
+    "time": "0:31:21.051471",
+    "n_completed_trials": 100
+}

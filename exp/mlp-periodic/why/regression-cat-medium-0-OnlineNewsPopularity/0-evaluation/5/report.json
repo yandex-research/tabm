@@ -1,0 +1,67 @@
+{
+    "function": "bin.model.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-40GB"
+    ],
+    "config": {
+        "seed": 5,
+        "batch_size": 256,
+        "patience": 16,
+        "n_epochs": -1,
+        "gradient_clipping_norm": 1.0,
+        "amp": true,
+        "data": {
+            "cache": true,
+            "path": "data/regression-cat-medium-0-OnlineNewsPopularity",
+            "num_policy": "noisy-quantile"
+        },
+        "optimizer": {
+            "type": "AdamW",
+            "lr": 3.2393164008528546e-05,
+            "weight_decay": 0.0005865937923753729
+        },
+        "model": {
+            "arch_type": "plain",
+            "backbone": {
+                "type": "MLP",
+                "n_blocks": 1,
+                "d_block": 1008,
+                "dropout": 0.2665438235479751
+            },
+            "num_embeddings": {
+                "type": "PeriodicEmbeddings",
+                "n_frequencies": 36,
+                "d_embedding": 24,
+                "frequency_init_scale": 0.07652485163247172,
+                "lite": false
+            }
+        }
+    },
+    "n_parameters": 1199341,
+    "prediction_type": "labels",
+    "epoch_size": 40,
+    "best_step": 1920,
+    "metrics": {
+        "train": {
+            "rmse": 0.8111127234106137,
+            "mae": 0.5976408123970032,
+            "r2": 0.2400844699902327,
+            "score": -0.8111127234106137
+        },
+        "val": {
+            "rmse": 0.8433231757674329,
+            "mae": 0.62452632188797,
+            "r2": 0.15656089295017162,
+            "score": -0.8433231757674329
+        },
+        "test": {
+            "rmse": 0.8592115767020474,
+            "mae": 0.632114827632904,
+            "r2": 0.15394829270224664,
+            "score": -0.8592115767020474
+        }
+    },
+    "time": "0:00:08.177617",
+    "chunk_size": null,
+    "eval_batch_size": 32768
+}

@@ -1,0 +1,67 @@
+{
+    "function": "bin.model.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 2,
+        "batch_size": 1024,
+        "patience": 16,
+        "n_epochs": -1,
+        "gradient_clipping_norm": 1.0,
+        "amp": true,
+        "data": {
+            "cache": true,
+            "path": "data/cooking-time",
+            "cat_policy": "ordinal"
+        },
+        "optimizer": {
+            "type": "AdamW",
+            "lr": 0.0001011679407511719,
+            "weight_decay": 0.0007267749949243972
+        },
+        "model": {
+            "arch_type": "plain",
+            "backbone": {
+                "type": "MLP",
+                "n_blocks": 1,
+                "d_block": 672,
+                "dropout": 0.3175204757751019
+            },
+            "num_embeddings": {
+                "type": "PeriodicEmbeddings",
+                "n_frequencies": 68,
+                "d_embedding": 20,
+                "frequency_init_scale": 0.03501064142975452,
+                "lite": true
+            }
+        }
+    },
+    "n_parameters": 2528669,
+    "prediction_type": "labels",
+    "epoch_size": 222,
+    "best_step": 7548,
+    "metrics": {
+        "train": {
+            "rmse": 0.44648950195038833,
+            "mae": 0.34739357233047485,
+            "r2": 0.5420868229411036,
+            "score": -0.44648950195038833
+        },
+        "val": {
+            "rmse": 0.46399590563509163,
+            "mae": 0.3602868616580963,
+            "r2": 0.5062648554689455,
+            "score": -0.46399590563509163
+        },
+        "test": {
+            "rmse": 0.48203065584662375,
+            "mae": 0.37599435448646545,
+            "r2": 0.48195215901630284,
+            "score": -0.48203065584662375
+        }
+    },
+    "time": "0:00:37.142652",
+    "chunk_size": null,
+    "eval_batch_size": 32768
+}

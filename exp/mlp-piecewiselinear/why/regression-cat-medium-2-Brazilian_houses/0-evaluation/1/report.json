@@ -1,0 +1,68 @@
+{
+    "function": "bin.model.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 1,
+        "batch_size": 256,
+        "patience": 16,
+        "n_epochs": -1,
+        "gradient_clipping_norm": 1.0,
+        "amp": true,
+        "data": {
+            "cache": true,
+            "path": "data/regression-cat-medium-2-Brazilian_houses",
+            "num_policy": "noisy-quantile",
+            "cat_policy": "ordinal"
+        },
+        "optimizer": {
+            "type": "AdamW",
+            "lr": 0.00018085477801149072,
+            "weight_decay": 0.0002440967844096259
+        },
+        "model": {
+            "arch_type": "plain",
+            "backbone": {
+                "type": "MLP",
+                "n_blocks": 4,
+                "d_block": 944,
+                "dropout": 0.0
+            },
+            "num_embeddings": {
+                "type": "PiecewiseLinearEmbeddingsV2",
+                "d_embedding": 32
+            }
+        },
+        "bins": {
+            "n_bins": 103
+        }
+    },
+    "n_parameters": 2950817,
+    "prediction_type": "labels",
+    "epoch_size": 30,
+    "best_step": 780,
+    "metrics": {
+        "train": {
+            "rmse": 0.029411749335631874,
+            "mae": 0.008961111307144165,
+            "r2": 0.9986387218286659,
+            "score": -0.029411749335631874
+        },
+        "val": {
+            "rmse": 0.0251007080078125,
+            "mae": 0.010909512639045715,
+            "r2": 0.9990021391325942,
+            "score": -0.0251007080078125
+        },
+        "test": {
+            "rmse": 0.07045834369857207,
+            "mae": 0.011976701207458973,
+            "r2": 0.9923051410336269,
+            "score": -0.07045834369857207
+        }
+    },
+    "time": "0:00:05.309808",
+    "chunk_size": null,
+    "eval_batch_size": 32768
+}

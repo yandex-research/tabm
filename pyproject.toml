@@ -1,0 +1,78 @@
+[project]
+name = "tabm"
+version = "0.0.1.dev0"
+# PyPI packages.
+dependencies = [
+    "delu==0.0.25",
+    "rtdl_num_embeddings==0.0.10",
+    "rtdl_revisiting_models==0.0.2",
+]
+
+[tool.pixi.project]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+channels = ["nvidia", "conda-forge", "pytorch", "nodefaults"]
+
+# Conda packages.
+[tool.pixi.dependencies]
+# Main (experiments can directly import these dependencies)
+loguru = "0.7.2"
+numpy = "1.26.3"
+optuna = "3.3.0"
+pandas = "2.1.1"
+polars = "1.5.0"
+python = "3.10.12"
+pytorch = { version = "2.0.1", channel = "pytorch" }
+scikit-learn = "1.3.1"
+scipy = "1.11.3"
+tensorboard = "2.15.2"
+tomli = "2.0.1"
+tomli-w = "1.0.0"
+tqdm = "4.66.1"
+typing-extensions = "4.8.0"
+# Development (results do not depend on these packages)
+bokeh = "3.3.4"
+holoviews = "1.18.3"
+hvplot = "0.10.0"
+ipython = "8.16.1"
+ipywidgets = "8.1.3"
+jupyterlab = "4.1.1"
+mypy = "1.7.1"
+panel = "1.3.6"
+pip = "23.3.1"
+psutil = "5.9.5"
+python-dotenv = "1.0.1"
+ruff = "0.6.0"
+seaborn = "0.13.2"
+
+[tool.pixi.pypi-options]
+index-url = "https://pypi.org/simple"
+
+[tool.pixi.feature.cuda]
+system-requirements = { libc = { family = "glibc", version = "2.27" } }
+# In fact, it should be this:
+# system-requirements = { cuda = "11.8", libc = { family = "glibc", version = "2.27" } }
+# But the "cuda" requirement breaks the project on macOS.
+
+# (As of pixi==0.29.0) The ".target.linux-64" part is a workaround for projects
+# with multiple platforms AND platform-specific dependencies (e.g. cuda) AND PyPI dependencies.
+# Details: https://github.com/prefix-dev/pixi/issues/1051#issuecomment-2088820974
+[tool.pixi.feature.cuda.target.linux-64.dependencies]
+pytorch-cuda = { version = "11.8", channel = "pytorch" }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+cuda = { features = ["cuda"], solve-group = "default" }
+
+[tool.mypy]
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+extend-select = ["RUF", "UP", "E501", "E731"]
+
+[tool.ruff.format]
+quote-style = "single"
