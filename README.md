@@ -20,7 +20,7 @@ Table of contents
 - [Set up the environment](#set-up-the-environment)
   - [Software](#software)
   - [Data](#data)
-  - [Test](#test)
+  - [Quick test](#quick-test)
 - [Using the repository](#using-the-repository)
   - [Common guidelines](#common-guidelines)
   - [Training](#training)
@@ -438,7 +438,7 @@ For example, all the above steps can be implemented in one command:
 
 ```
 mkdir -p exp/reproduce/tabm-go/california
-cp exp/tabm/california/0-tuning.toml exp/reproduce2/tabm-go/california
+cp exp/tabm/california/0-tuning.toml exp/reproduce/tabm-go/california
 
 python bin/go.py exp/reproduce/tabm-go/california/0-tuning --continue
 ```

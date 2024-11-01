@@ -9,7 +9,7 @@ def prepare_tabred(
     tabred_src: Path, tabred_dst: Path, print_only: bool = False, exist_ok: bool = False
 ) -> None:
     assert tabred_src.exists()
-    tabred_dst.mkdir(exist_ok=exist_ok)
+    tabred_dst.mkdir(exist_ok=True)
 
     for src in tabred_src.iterdir():
         print('>>>', src.name)
