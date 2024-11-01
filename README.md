@@ -46,7 +46,7 @@ Running the code, including training and hyperparameter tuning, is covered later
 | `bin/tune.py`     | Hyperparameter tuning                                    |
 | `bin/evaluate.py` | Evaluating a model under multiple random seeds           |
 | `bin/ensemble.py` | Evaluate an ensemble of models                           |
-| `bin/go.py`       | `bin/tune.py` + `bin/evaluate.py` + `bin/evaluate.py`    |
+| `bin/go.py`       | `bin/tune.py` + `bin/evaluate.py` + `bin/ensemble.py`    |
 | `lib`             | Common utilities used by the scripts in `bin`            |
 | `exp`             | Hyperparameters and metrics on all datasets              |
 | `tools`           | Additional technical tools                               |
@@ -325,12 +325,12 @@ Then, run:
 python tools/prepare_tabred.py local/tabred data
 ```
 
-## Test
+## Quick test
 
 To check that the environment is configured correctly,
 run the following command and wait for the training to finish.
 Please, note:
-- The first run in a newly created environment can be slow to start.
+- The first run in a newly created environment can be (very) slow to start.
 - The results of the experiment will not be representative.
   It is needed only to test the environment.
 
@@ -437,7 +437,6 @@ Use `bin/go.py` to run hyperparameter tuning, evaluation and ensembling in one c
 For example, all the above steps can be implemented in one command:
 
 ```
-# Create
 mkdir -p exp/reproduce/tabm-go/california
 cp exp/tabm/california/0-tuning.toml exp/reproduce2/tabm-go/california
 
@@ -446,8 +445,7 @@ python bin/go.py exp/reproduce/tabm-go/california/0-tuning --continue
 
 # Adding new datasets
 
-New datasets must follow the layout and NumPy data types of the datasets in `data/`.
-A good example is the `data/adult` dataset, because it contains all types of features.
+*New datasets must follow the layout and NumPy data types of the datasets in `data/`.*
 
 Let's assume your dataset is called `my-dataset`.
 Then, create the `data/my-dataset` directory with the following content:
