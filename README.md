@@ -1,7 +1,7 @@
 # TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
 
-> [!WARNING]
-> The project is under construction. The official announcement is coming soon.
+> [!IMPORTANT]
+> The official announcement is coming soon.
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
 &nbsp; :books: [RTDL (other projects on tabular DL)](https://github.com/yandex-research/rtdl)
