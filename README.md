@@ -282,10 +282,10 @@ To run any `<command>` with GPU, the `CUDA_VISIBLE_DEVICES` environment variable
 ```
 # Like this
 export CUDA_VISIBLE_DEVICES="0"
-<your command>
+<command>
 
 # Or like this
-CUDA_VISIBLE_DEVICES="0" <your command>
+CUDA_VISIBLE_DEVICES="0" <command>
 ```
 
 ## Data
@@ -317,8 +317,11 @@ python tools/prepare_tabred.py local/tabred data
 ## Test
 
 To check that the environment is configured correctly,
-run the following command and wait for the training to finish
-(the results will not be representative, this is needed only to test the environment):
+run the following command and wait for the training to finish.
+Please, note:
+- The first run in a newly created environment can be slow to start.
+- The results of the experiment will not be representative.
+  It is needed only to test the environment.
 
 ```
 export CUDA_VISIBLE_DEVICES=0
