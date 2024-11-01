@@ -9,7 +9,7 @@
 "TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling". -->
 
 > [!IMPORTANT]
-> For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the paper.
+> For a quick overview, see **the abstract, Figure 1 and Page 7** in the paper.
 
 ---
 
