@@ -59,8 +59,8 @@ For example, this is how to summarize the metrics for TabM:
 <details>
 <summary>Code</summary>
 
-> [!TIP]
-> With [Pixi](https://pixi.sh), you can simply do `pixi run jupyter-lab` and run the code below as-is:
+<!-- > [!TIP]
+> With [Pixi](https://pixi.sh), you can simply do `pixi run jupyter-lab` and run the code below as-is: -->
 
 ```python
 import json
