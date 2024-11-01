@@ -1,5 +1,8 @@
 # TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
 
+> [!WARNING]
+> The project is under construction. The official announcement is coming soon.
+
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
 &nbsp; :books: [RTDL (other projects on tabular DL)](https://github.com/yandex-research/rtdl)
 
@@ -8,7 +11,7 @@
 <!-- The official implementation of the paper
 "TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling". -->
 
-> [!IMPORTANT]
+> [!TIP]
 > For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](https://arxiv.org/pdf/2410.24210).
 
 ---
@@ -415,11 +418,14 @@ python bin/evaluate.py exp/reproduce/tabm/california/0-tuning
 ```
 
 To evaluate a manually composed config for `bin/model.py`,
-it must be named `0.toml` and the name of its parent directory must end with `-evaluation`.
+create a directory with a name ending with `-evaluation`,
+and put the config with the name `0.toml` in it.
+Then, pass the directory as the argument to `bin/evaluate.py`.
 For example:
 
 ```
-python bin/evaluate.py exp/<some/path/hello/world>/0-evaluation
+# The config is stored at exp/<any/path>/0-evaluation/0.toml
+python bin/evaluate.py exp/<any/path>/0-evaluation
 ```
 
 ## Ensembling
