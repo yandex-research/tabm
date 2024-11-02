@@ -205,7 +205,7 @@ when you do `pixi run` or `pixi shell` for the first time. For example, try:
 pixi run python --version
 
 # Running commands in the environment with GPU
-pixi run -e cuda python -m "import torch; print(torch.cuda.is_available())"
+pixi run -e cuda python -c "import torch; print(torch.cuda.is_available())"
 ```
 
 Alternatively, if you prefer the Conda-like workflow:
