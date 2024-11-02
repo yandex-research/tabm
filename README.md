@@ -24,7 +24,7 @@ Table of contents
   - [Software](#software)
   - [Data](#data)
   - [Quick test](#quick-test)
-- [Using the repository](#using-the-repository)
+- [Running the code](#running-the-code)
   - [Common guidelines](#common-guidelines)
   - [Training](#training)
   - [Hyperparameter tuning](#hyperparameter-tuning)
@@ -57,13 +57,10 @@ Running the code, including training and hyperparameter tuning, is covered later
 ## Metrics
 
 The `exp/` directory allows easily exploring the metrics of models on all datasets.
-For example, this is how to summarize the metrics for TabM:
+For example, this is how to summarize the metrics on all datasets for TabM:
 
 <details>
 <summary>Code</summary>
-
-<!-- > [!TIP]
-> With [Pixi](https://pixi.sh), you can simply do `pixi run jupyter-lab` and run the code below as-is: -->
 
 ```python
 import json
@@ -170,104 +167,62 @@ cd tabm
 
 **Step 2.**
 To manage the project, use any of the following tools:
-[Pixi](https://github.com/prefix-dev/pixi/?tab=readme-ov-file#installation) (CPU or GPU),
+[Pixi](https://pixi.sh/latest/#installation) (CPU or GPU),
 [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) (requires GPU),
 [Mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)  (requires GPU),
 [Conda](https://conda-forge.org/download/) (requires GPU).
 
-With Pixi, the environment will be created automatically when you run any command. For example, try:
+<details>
+<summary>If you are new to Pixi</summary>
 
-```
-# On a CPU-only machine
+Pixi is a high-level tool built on top of Conda environments.
+
+*The main benefits:*
+
+- **Pixi allows running the code seamlessly across different operating systems, with and without GPUs**
+  (this projects supports only Linux and macOS).
+- **Pixi guarantees that you and your collaborators will always have exactly the same Conda environment.**
+  If anyone adds/removes/updates a package, the enviroment is updated for all collaborators through the `pixi.lock` file.
+  In particular, you will have exactly the same environment as us, the original authors.
+
+*Technical details:*
+
+- **Pixi is a single binary file that can be downloaded and run as-is.**
+  Thus, Pixi will not affect your current installations of pip, uv, conda, and of any other tools.
+- **Pixi will automatically create and manage Conda environments in the `.pixi` folder right in the root of this repository.** No need for manually creating the environment,
+  installing packages, etc. At any moment, it is totally safe to remove the `.pixi` directory from the root of this repository.
+- **All Pixi commands must be run from the root of the repository.**
+
+For more details, see the official Pixi documentation.
+
+</details>
+
+With Pixi, the environment will be created automatically
+when you do `pixi run` or `pixi shell` for the first time. For example, try:
+
+```shell
+# Running commands in the CPU-only environment
 pixi run python --version
 
-# On a machine with GPU
+# Running commands in the environment with GPU
 pixi run -e cuda python -m "import torch; print(torch.cuda.is_available())"
 ```
 
 Alternatively, if you prefer the Conda-like workflow:
 
-```
+```shell
 # Activate the CPU-only environment
 pixi shell
 
 # Activate the environment with GPU
 pixi shell -e cuda
-```
 
-<details>
-<summary><i>If you are new to Pixi</i></summary>
+# Running commands (without `pixi run`)
+python --version
 
-The main benefits of Pixi for this project:
-
-1. Pixi allows seamlessly running the code on Linux and macOS, with and without GPUs.
-   For example, if you are reading this from a laptop,
-   then your machine is one command away from running any code in this repository.
-2. Pixi guarantees that you and all your collaborators will always have exactly the same environment.
-   If anyone adds/removes a package, the enviroment is updated for all collaborators.
-   In particular, you will have exactly the same environment as us, the original authors.
-
-**A three-minute crash course**
-
-- Pixi is a single binary file that can be downloaded and run as-is.
-  Thus, Pixi will not affect your current installations of pip, uv, conda, and of any other tools.
-- Pixi will automatically create and manage conda environments in the `.pixi` folder
-  right in the root of this repository. No need for manually creating the environment,
-  installing packages, etc.
-- All Pixi commands must be run from the root of the repository.
-- At any moment, it is totally safe to remove the `.pixi` directory from the root of this repository.
-
-There are two ways to run commands:
-
-- The Pixi way: `pixi run <command>`.
-  Pixi will automatically validate and activate the conda environment before running your command.
-  If the environment has not been created yet, Pixi will automatically create it.
-- The Conda way: activate the environment with `pixi shell` and run `<command>` as-is.
-
-*The examples below cover both approaches.*
-
-Run any command in the default conda environment without GPU:
-
-```
-pixi run <any command with any arguments>
-
-# Example
-pixi run python --version
-```
-
-Run any command in the conda environment with GPU:
-
-```
-pixi run -e cuda <any command with any arguments>
-
-# Example
-pixi run -e cuda python -c "import torch; print(torch.cuda.is_available)"
-```
-
-Activate the default environment without GPU:
-
-```
-pixi shell
-```
-
-Activate the environment with GPU:
-
-```
-pixi shell -e cuda
-```
-
-Once the environment is activated, run any commands, as you would do with Conda.
-
-To deactivate the current environment:
-
-```
+# Deactivate the environment
 exit
 ```
-
-The above commands are enough to run the code in this repository.
-For more details, see the official Pixi documentation.
-
-</details>
 
 With Micromamba:
 
@@ -317,8 +272,6 @@ mkdir data
 tar -xvf local/tabm-data.tar.gz -C data
 ```
 
-After that, the `data/` directory should appear.
-
 **Part 2.** Create the `local` directory
 and download the [TabReD](https://github.com/yandex-research/tabred) benchmark to `local/tabred`
 (you will need an account on Kaggle).
@@ -337,7 +290,7 @@ Please, note:
 - The results of the experiment will not be representative.
   It is needed only to test the environment.
 
-```
+```shell
 export CUDA_VISIBLE_DEVICES=0
 
 # Pixi without GPU
@@ -355,17 +308,17 @@ The last line of the output log should look like this:
 [<<<] exp/debug/0 | <date & time>
 ```
 
-# Using the repository
+# Running the code
 
-This section is useful for:
+This section will be useful if you are planning any of the following:
 
-- Tuning and training the models on custom datasets.
 - Reproducing the results from the paper.
+- Tuning and training the models on custom datasets.
 - Using this repository as a starting point for future work.
 
 ## Common guidelines
 
-During the first read, feel free to skip this section.
+On your first reading, feel free to skip this section.
 
 <details>
 <summary>Show</summary>
@@ -439,8 +392,8 @@ python bin/ensemble.py exp/reproduce/tabm/california/0-evaluation
 
 ## Automating all of the above
 
-Use `bin/go.py` to run hyperparameter tuning, evaluation and ensembling in one command.
-For example, all the above steps can be implemented in one command:
+Use `bin/go.py` to run hyperparameter tuning, evaluation and ensembling with a single command.
+For example, all the above steps can be implemented as follows:
 
 ```
 mkdir -p exp/reproduce/tabm-go/california
