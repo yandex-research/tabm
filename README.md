@@ -245,18 +245,6 @@ conda create -f environment.yaml
 conda activate tabm
 ```
 
-**Step 3.**
-To run any `<command>` with GPU, the `CUDA_VISIBLE_DEVICES` environment variable must be explicitly set:
-
-```
-# Like this
-export CUDA_VISIBLE_DEVICES="0"
-<command>
-
-# Or like this
-CUDA_VISIBLE_DEVICES="0" <command>
-```
-
 ## Data
 
 ***License:** we do not impose any new license restrictions in addition to the original licenses of the used dataset. See the paper to learn about the dataset sources.*
@@ -291,13 +279,11 @@ Please, note:
   It is needed only to test the environment.
 
 ```shell
-export CUDA_VISIBLE_DEVICES=0
+# Pixi with GPU
+pixi run -e cuda python bin/model.py exp/debug/0.toml --force
 
 # Pixi without GPU
 pixi run python bin/model.py exp/debug/0.toml --force
-
-# Pixi with GPU
-pixi run -e cuda python bin/model.py exp/debug/0.toml --force
 
 # Without Pixi
 python bin/model.py exp/debug/0.toml --force

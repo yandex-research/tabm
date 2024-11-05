@@ -383,7 +383,7 @@ def main(
     logger.info(f'n_parameters = {report["n_parameters"]}')
     report['prediction_type'] = 'labels' if dataset.task.is_regression else 'probs'
     model.to(device)
-    if torch.cuda.device_count() > 1:
+    if lib.is_dataparallel_available():
         model = nn.DataParallel(model)
 
     # >>> Training

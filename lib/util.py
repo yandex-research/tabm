@@ -360,14 +360,16 @@ def log_scores(metrics: dict) -> None:
 # ======================================================================================
 def get_device():  # -> torch.device
     torch = _torch()
+    return torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
-    if torch.cuda.is_available():
-        assert (
-            'CUDA_VISIBLE_DEVICES' in os.environ
-        ), 'If CUDA devices are available, CUDA_VISIBLE_DEVICES must be set explicitly.'
-        return torch.device('cuda:0')
-    else:
-        return torch.device('cpu')
+
+def is_dataparallel_available() -> bool:
+    torch = _torch()
+    return (
+        torch.cuda.is_available()
+        and torch.cuda.device_count() > 1
+        and 'CUDA_VISIBLE_DEVICES' in os.environ
+    )
 
 
 def get_gpu_names() -> list[str]:
