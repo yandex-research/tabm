@@ -4,12 +4,10 @@
 > The official announcement is coming soon.
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
-&nbsp; :books: [RTDL (other projects on tabular DL)](https://github.com/yandex-research/rtdl)
+<!-- &nbsp; :computer: [Example](./example.ipynb) -->
+&nbsp; :books: [Other tabular DL projects](https://github.com/yandex-research/rtdl)
 
 *TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
-
-<!-- The official implementation of the paper
-"TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling". -->
 
 > [!TIP]
 > For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](https://arxiv.org/pdf/2410.24210).
@@ -18,13 +16,15 @@
 
 Table of contents
 - [Overview](#overview)
-  - [Code](#code)
+  - [Models](#models)
+  - [Hyperparameters](#hyperparameters)
   - [Metrics](#metrics)
 - [Set up the environment](#set-up-the-environment)
   - [Software](#software)
   - [Data](#data)
   - [Quick test](#quick-test)
 - [Running the code](#running-the-code)
+  - [Code overview](#code-overview)
   - [Common guidelines](#common-guidelines)
   - [Training](#training)
   - [Hyperparameter tuning](#hyperparameter-tuning)
@@ -38,29 +38,160 @@ Table of contents
 
 # Overview
 
-This section provides a brief overview of the project.
-Running the code, including training and hyperparameter tuning, is covered later in this document.
+The repository provides:
+- The official implementation of the TabM and MLP models.
+- The code for training and hyperparameter tuning used in the paper.
+- Hyperparameter tuning spaces, tuned hyperparameters and metrics of the models on all 40+ datasets
+  used in the paper.
 
-## Code
+<!-- ## Example
 
-| Code              | Comment                                                  |
-| :---------------- | :------------------------------------------------------- |
-| `bin/model.py`    | **The implementation of TabM** and the training pipeline |
-| `bin/tune.py`     | Hyperparameter tuning                                    |
-| `bin/evaluate.py` | Evaluating a model under multiple random seeds           |
-| `bin/ensemble.py` | Evaluate an ensemble of models                           |
-| `bin/go.py`       | `bin/tune.py` + `bin/evaluate.py` + `bin/ensemble.py`    |
-| `lib`             | Common utilities used by the scripts in `bin`            |
-| `exp`             | Hyperparameters and metrics on all datasets              |
-| `tools`           | Additional technical tools                               |
+The `example.ipynb` notebook provides a standalone example of training TabM. -->
+
+## Models
+
+The following models are available in this repository.
+
+> [!TIP]
+> Among the TabM models, the following variations are recommended as a starting point:
+> - $\mathrm{TabM}$ as the basic version.
+> - $\mathrm{TabM_{mini}^\dagger}$ as the advanced version.
+
+| Name                           | Comment                                        |
+| :----------------------------- | :--------------------------------------------- |
+| $\mathrm{MLP}$                 | The plain multilayer perceptron (MLP)          |
+| $\mathrm{MLP^\dagger}$         | MLP with the piecewise-linear embeddings       |
+| $\mathrm{MLP{-}PLR}$           | MLP with the periodic embeddings               |
+| $\mathrm{MLP{-}PLR_{lite}}$    | MLP with the lite periodic embeddings          |
+| $\mathrm{TabM_{mini}}$         | TabM-mini                                      |
+| $\mathrm{TabM}$                | TabM                                           |
+| $\mathrm{TabM_{mini}^\dagger}$ | TabM-mini with the piecewise-linear embeddings |
+| $\mathrm{TabM^\dagger}$        | TabM with the piecewise-linear embeddings      |
+
+## Hyperparameters
+
+This section covers default hyperparameters and hyperparameter tuning.
+
+**Default hyperparameters**
+
+While there are no "official" default hyperparameters, the available tuned hyperparameters
+on 40+ dataset allow obtaining a reasonable configuration for the first run.
+
+<details>
+<summary>Show how</summary>
+
+```python
+import json
+from pathlib import Path
+
+import pandas as pd
+
+model = 'tabm'  # Or any other model from the exp/ directory.
+
+# Load all training runs.
+df = pd.json_normalize([
+    json.loads(x.read_text())
+    for x in Path('exp').glob(f'{model}/**/0-evaluation/*/report.json')
+])
+print(df.shape)  # (1290, 181)
+df.head()
+
+def get_dataset_name(dataset_path: str) -> str:
+    """
+    >>> get_dataset_name('data/california')
+    'california'
+    >>> get_dataset_name('data/regression-num-large-0-year')
+    'year'
+    """
+    name = dataset_path.removeprefix('data/')
+    return (
+        name.split('-', 4)[-1]  # The "why" benchmark.
+        if name.startswith(('classif-', 'regression-'))
+        else name
+    )
+
+
+df['Dataset'] = df['config.data.path'].map(get_dataset_name)
+
+# The hyperparameters.
+hyperparameters = [
+    'config.model.k',
+    'config.model.backbone.n_blocks',
+    'config.model.backbone.d_block',
+    'config.model.backbone.dropout',
+    'config.optimizer.lr',
+    'config.optimizer.weight_decay',
+]
+
+# When summarizing hyperparameters (but not metrics),
+# it is enough to keep only one seed per dataset.
+dfh = df.loc[df['config.seed'] == 0, ['Dataset', *hyperparameters]]
+
+# Add additional "hyperparameters".
+dfh['has_dropout'] = (dfh['config.model.backbone.dropout'] > 0).astype(float)
+dfh['has_weight_decay'] = (dfh['config.optimizer.weight_decay'] > 0).astype(float)
+
+# Some datasets have multiple splits, so they must be aggregated first.
+dfh = dfh.groupby('Dataset').mean()
+
+# Finally, compute the statistics.
+# NOTE: it is important to take all statistics into account, especially the quantiles,
+# not only the mean value, because the latter is not robust to outliers.
+dfh.describe()
+```
+
+**Additional notes**
+
+First, the above approach is not expected to result in a universally powerful configuration.
+Generally, the more robust to hyperparameters the model is, the higher is the chance
+to compose a configuration that will be a reasonable starting point on a larger number of datasets.
+
+Second, when computing the above statistics,
+a seemingly natural idea is to use only those datasets that are more similar to the task at hand.
+Also, not all used datasets are equally representative for the real world usage.
+However, deciding if a given dataset is relevant for the target task is not trivial.
+For example, generally, filtering datasets by size may not be a reliable criteria.
+
+One idea is to split datasets into different groups,
+compute statistics separately for each group, and thus get better intuition on hyperparameters.
+Examples of groups:
+- By split type: "datasets with random splits" and "datasets with domain-aware splits"
+  (this separation is used in the paper).
+- By GBDT/DL-friendliness: "datasets where GBDT performs well" and "datasets where DL performs well".
+- etc.
+
+</details>
+
+Based on the above approach, the following configurations can be suggested as a starting point
+for TabM with the AdamW optimizer:
+
+> [!NOTE]
+> The suggested hyperparameters may change in the future.
+
+| Hyperparameter | $\mathrm{TabM}$ | $\mathrm{TabM_{mini}^\dagger}$ |
+| :------------- | :-------------- | :----------------------------- |
+| `k`            | 32              | 32                             |
+| Depth          | 3               | 2                              |
+| Width          | 512             | 512                            |
+| Dropout        | 0.1             | TODO                           |
+| Bins           | N/A             | TODO                           |
+| Learning rate  | 0.002           | TODO                           |
+| Weight decay   | 0.0003          | TODO                           |
+
+**Hyperparameter tuning**
+
+If achieving the highest possible performance is not critical,
+then 30-50 iterations of the TPE sampler from Optuna should result in a somewhat reasonable configuration.
+It the paper:
+- For MLP, 100 iterations were used.
+- For TabM, 100 iterations were used on smaller datasets, and 50 iterations on larger datasets.
 
 ## Metrics
 
-The `exp/` directory allows easily exploring the metrics of models on all datasets.
-For example, this is how to summarize the metrics on all datasets for TabM:
+The published results allow easily summarizing the metrics of the models on all datasets.
 
 <details>
-<summary>Code</summary>
+<summary>Show how</summary>
 
 ```python
 import json
@@ -69,6 +200,12 @@ from pathlib import Path
 import pandas as pd
 
 def get_dataset_name(dataset_path: str) -> str:
+    """
+    >>> get_dataset_name('data/california')
+    'california'
+    >>> get_dataset_name('data/regression-num-large-0-year')
+    'year'
+    """
     name = dataset_path.removeprefix('data/')
     return (
         name.split('-', 4)[-1]  # The "why" benchmark.
@@ -76,21 +213,20 @@ def get_dataset_name(dataset_path: str) -> str:
         else name
     )
 
+model = 'tabm'  # Or any other model from the exp/ directory.
+
+# Load all training runs.
 df = pd.json_normalize([
     json.loads(x.read_text())
-    for x in Path('exp').glob('tabm/**/0-evaluation/*/report.json')
+    for x in Path('exp').glob(f'{model}/**/0-evaluation/*/report.json')
 ])
 df['Dataset'] = df['config.data.path'].map(get_dataset_name)
 
+# Aggregate the results over the random seeds.
 print(df.groupby('Dataset')['metrics.test.score'].agg(['mean', 'std']))
 ```
 
-</details>
-
 The output exactly matches the metrics reported in the very last section of the paper:
-
-<details>
-<summary>Output</summary>
 
 ```
                                              mean         std
@@ -153,27 +289,24 @@ year                                    -8.870127    0.011037
 
 ## Software
 
-**Requirements**
-
-- OS: Linux or macOS.
-- Hardware: GPU is not required, but highly recommended for running compute-heavy pipelines.
-
-**Step 1.** Clone the repository:
+Clone the repository:
 
 ```shell
 git clone https://github.com/yandex-research/tabm
 cd tabm
 ```
 
-**Step 2.**
-To manage the project, use any of the following tools:
-[Pixi](https://pixi.sh/latest/#installation) (CPU or GPU),
-[Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) (requires GPU),
-[Mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)  (requires GPU),
-[Conda](https://conda-forge.org/download/) (requires GPU).
+Install any of the following tools, and follow the remaining instructions.
+
+| Tool                                                                                           | Supported OS | Supported devices |
+| :--------------------------------------------------------------------------------------------- | :----------- | :---------------- |
+| [Pixi](https://pixi.sh/latest/#installation)                                                   | Linux, macOS | CPU, GPU          |
+| [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) | Linux        | GPU               |
+| [Mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)           | Linux        | GPU               |
+| [Conda](https://conda-forge.org/download/)                                                     | Linux        | GPU               |
 
 <details>
-<summary>If you are new to Pixi</summary>
+<summary>What is Pixi?</summary>
 
 Pixi is a high-level tool built on top of Conda environments.
 
@@ -201,21 +334,21 @@ With Pixi, the environment will be created automatically
 when you do `pixi run` or `pixi shell` for the first time. For example, try:
 
 ```shell
-# Running commands in the CPU-only environment
-pixi run python --version
-
 # Running commands in the environment with GPU
 pixi run -e cuda python -c "import torch; print(torch.cuda.is_available())"
+
+# Running commands in the CPU-only environment
+pixi run python --version
 ```
 
-Alternatively, if you prefer the Conda-like workflow:
+Or, if you prefer the Conda style workflow:
 
 ```shell
-# Activate the CPU-only environment
-pixi shell
-
 # Activate the environment with GPU
 pixi shell -e cuda
+
+# Activate the CPU-only environment
+pixi shell
 
 # Running commands (without `pixi run`)
 python --version
@@ -302,6 +435,50 @@ This section will be useful if you are planning any of the following:
 - Tuning and training the models on custom datasets.
 - Using this repository as a starting point for future work.
 
+## Code overview
+
+| Code              | Comment                                                   |
+| :---------------- | :-------------------------------------------------------- |
+| `bin/model.py`    | **The implementation of TabM** and the training pipeline  |
+| `bin/tune.py`     | Hyperparameter tuning                                     |
+| `bin/evaluate.py` | Evaluating a model under multiple random seeds            |
+| `bin/ensemble.py` | Evaluate an ensemble of models                            |
+| `bin/go.py`       | `bin/tune.py` + `bin/evaluate.py` + `bin/ensemble.py`     |
+| `lib`             | Common utilities used by the scripts in `bin`             |
+| `exp`             | Hyperparameters and metrics of the models on all datasets |
+| `tools`           | Additional technical tools                                |
+
+The `exp` directory is structured as follows:
+
+```
+exp/
+  <model>/
+    <dataset>/       # Or why/<dataset> or tabred/<dataset>
+      0-tuning.toml  # The hyperparameter tuning config
+      0-tuning/      # The result of the hyperparameter tuning
+      0-evaluation/  # The evaluation under multiple random seeds
+```
+
+**Models**
+
+All available models are represented by the `Model` class from `bin/model.py`.
+They differ in the `arch_type`, `k`, `num_embeddings` and `bins` arguments.
+The values for these arguments can be inferred from the TOML configs in the `exp` directory,
+and from the `bin/model.py` script, where `Model` is used.
+
+The following table is the mapping between the models and their subdirectories in `exp`.
+
+| Model                          | Experiments                     |
+| :----------------------------- | :------------------------------ |
+| $\mathrm{MLP}$                 | `exp/mlp`                       |
+| $\mathrm{MLP^\dagger}$         | `exp/mlp-piecewiselinear`       |
+| $\mathrm{MLP{-}PLR}$           | `exp/mlp-periodic`              |
+| $\mathrm{MLP{-}PLR(lite)}$     | `exp/mlp-periodiclite`          |
+| $\mathrm{TabM_{mini}}$         | `exp/tabm-mini`                 |
+| $\mathrm{TabM}$                | `exp/tabm`                      |
+| $\mathrm{TabM_{mini}^\dagger}$ | `exp/tabm-mini-piecewiselinear` |
+| $\mathrm{TabM^\dagger}$        | `exp/tabm-piecewiselinear`      |
+
 ## Common guidelines
 
 On your first reading, feel free to skip this section.
@@ -317,8 +494,8 @@ On your first reading, feel free to skip this section.
 - Some scripts support the `--continue` flag to continue the execution of an interrupted run.
 - Some scripts support the `--force` flag to **overwrite the existing result**
   and run the script from scratch.
-- The layout in the `exp` directory can be arbitrary.
-  The `exp/<model>/<dataset>/<activity>/<results>` pattern is just our convention.
+- The layout in the `exp` directory can be arbitrary;
+  the current layout is just our convention.
 
 </details>
 
@@ -393,33 +570,54 @@ python bin/go.py exp/reproduce/tabm-go/california/0-tuning --continue
 *New datasets must follow the layout and NumPy data types of the datasets in `data/`.*
 
 Let's assume your dataset is called `my-dataset`.
-Then, create the `data/my-dataset` directory with the following content:
+Then, create the `data/my-dataset` directory with the following layout:
 
-1. If the dataset has continuous (a.k.a. "numerical") features
-    - Files: `X_num_train.npy`, `X_num_val.npy`, `X_num_test.npy`
-    - NumPy data type: `np.float32`
-2. If the dataset has binary features
-    - Files: `X_bin_train.npy`, `X_bin_val.npy`, `X_bin_test.npy`
-    - NumPy data type: `np.float32`
-    - All values must be `0.0` and `1.0`
-3. If the dataset has categorical features
-    - Files: `X_cat_train.npy`, `X_cat_val.npy`, `X_cat_test.npy`
-    - NumPy data type: `np.str_` (**yes, the values must be strings**)
-4. Labels
-    - Files: `Y_train.npy`, `Y_val.npy`, `Y_test.npy`
-    - NumPy data type: `np.float32` for regression, `np.int64` for classification
-    - For classification problems, the labels must form the range `[0, ..., n_classes - 1]`.
-5. `info.json` -- a JSON file with the following keys:
-    - `"task_type"`: one of `"regression"`, `"binclass"`, `"multiclass"`
-    - (optional) `"name"`: any string (a "pretty" name for your dataset, e.g. `"My Dataset"`)
-    - (optional) `"id"`: any string (must be unique among all `"id"` keys of all `info.json` files of all datasets in `data/`)
-6. `READY` -- just an empty file
+```
+data/
+  my-dataset/
+    # Continuous features, if presented
+    # NumPy data type: np.float32
+    X_num_train.npy
+    X_num_val.npy
+    X_num_test.npy
+
+    # Categorical features, if presented
+    # NumPy data type: np.str_ (i.e. string)
+    X_cat_train.npy
+    X_cat_val.npy
+    X_cat_test.npy
+
+    # Binary features, if presented
+    # NumPy data type: np.float32
+    X_bin_train.npy
+    X_bin_val.npy
+    X_bin_test.npy
+
+    # Labels
+    # NumPy data type (regression): np.float32
+    # NumPy data type (classification): np.int64
+    Y_train.npy
+    Y_val.npy
+    Y_test.npy
+
+    # Dataset information in the JSON format:
+    # {
+    #     (required) "task_type": < "regression" or "binclass" or "multiclass"     >,
+    #     (optional) "name":      < The full dataset name, e.g. "My Dataset"       >,
+    #     (optional) "id":        < Any string unique across all datasets in data/ >
+    # 
+    # }
+    info.json
+
+    # Just an empty file
+    READY
+```
 
 # How to cite
 
 ```
 @article{gorishniy2024tabm,
-    title={TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling},
+    title={{TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling}},
     author={Yury Gorishniy and Akim Kotelnikov and Artem Babenko},
     journal={{arXiv}},
     volume={2410.24210},
