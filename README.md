@@ -4,7 +4,7 @@
 > The official announcement is coming soon.
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
-<!-- &nbsp; :computer: [Example](./example.ipynb) -->
+&nbsp; :computer: [Example](./example.ipynb)
 &nbsp; :books: [Other tabular DL projects](https://github.com/yandex-research/rtdl)
 
 *TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
@@ -16,6 +16,7 @@
 
 Table of contents
 - [Overview](#overview)
+  - [Example](#example)
   - [Models](#models)
   - [Hyperparameters](#hyperparameters)
   - [Metrics](#metrics)
@@ -44,9 +45,9 @@ The repository provides:
 - Hyperparameter tuning spaces, tuned hyperparameters and metrics of the models on all 40+ datasets
   used in the paper.
 
-<!-- ## Example
+## Example
 
-The `example.ipynb` notebook provides a standalone example of training TabM. -->
+The `example.ipynb` notebook provides a standalone example of training TabM.
 
 ## Models
 
