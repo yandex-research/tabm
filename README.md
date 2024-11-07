@@ -24,6 +24,7 @@ Table of contents
   - [Software](#software)
   - [Data](#data)
   - [Quick test](#quick-test)
+  - [Editor settings](#editor-settings)
 - [Running the code](#running-the-code)
   - [Code overview](#code-overview)
   - [Common guidelines](#common-guidelines)
@@ -426,6 +427,20 @@ python bin/model.py exp/debug/0.toml --force
 The last line of the output log should look like this:
 ```
 [<<<] exp/debug/0 | <date & time>
+```
+
+## Editor settings
+
+To make your Python language server more responsive, it is recommended to hide the `exp`
+directory from the language server. For example, in Visual Studio Code, this can be achieved
+by adding the following to the local `.vscode/settings.json` file of this project:
+
+```json
+{
+    "python.analysis.exclude": [
+        "**/exp",
+    ],
+}
 ```
 
 # Running the code
