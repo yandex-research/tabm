@@ -82,172 +82,19 @@ class NLinear(nn.Module):
         return x
 
 
-class _PiecewiseLinearEncodingV2(nn.Module):
-    """A faster implementation of the piecewise-linear encoding.
-
-    The original paper:
-    "On Embeddings for Numerical Features in Tabular Deep Learning".
-
-    The key observations that led to this implementation:
-
-    * The piecewise-linear encoding is just
-      a linear transformation followed by a clamp-based activation.
-    * Aligning the *last* encoding channel across all features
-      allows applying the activation simultaneously to all features without
-      the loop over features.
+class PiecewiseLinearEmbeddings(rtdl_num_embeddings.PiecewiseLinearEmbeddings):
+    """
+    This class simply adds the default values for `activation` and `version`.
     """
 
-    weight: Tensor
-    bias: Tensor
-    single_bin_mask: None | Tensor
-    mask: None | Tensor
-
-    def __init__(self, bins: list[Tensor]) -> None:
-        assert len(bins) > 0
-        super().__init__()
-
-        n_features = len(bins)
-        n_bins = [len(x) - 1 for x in bins]
-        max_n_bins = max(n_bins)
-
-        # Making the weight and bias trainable can lead to worse performance.
-        self.register_buffer('weight', torch.zeros(n_features, max_n_bins))
-        self.register_buffer('bias', torch.zeros(n_features, max_n_bins))
-
-        single_bin_mask = torch.tensor(n_bins) == 1
-        self.register_buffer(
-            'single_bin_mask', single_bin_mask if single_bin_mask.any() else None
-        )
-
-        self.register_buffer(
-            'mask',
-            # The mask is needed if features have different number of bins.
-            None
-            if all(len(x) == len(bins[0]) for x in bins)
-            else torch.row_stack(
-                [
-                    torch.cat(
-                        [
-                            # The number of bins for this feature, minus 1:
-                            torch.ones((len(x) - 1) - 1, dtype=torch.bool),
-                            # Inactive bins (always zeros):
-                            torch.zeros(max_n_bins - (len(x) - 1), dtype=torch.bool),
-                            # The last bin:
-                            torch.ones(1, dtype=torch.bool),
-                        ]
-                    )
-                    for x in bins
-                ]
-            ),
-        )
-
-        for i, bin_edges in enumerate(bins):
-            # >>>
-            # Recall that the piecewise-linear encoding of a single feature x
-            # looks as follows:
-            #
-            # x --> [1, ..., 1, (x - left_bin_edge) / bin_width, 0, ..., 0]
-            #
-            # where the expression in the middle corresponds to the bin where
-            # the feature belongs: left_bin_edge <= x < right_bin_edge
-            # <<<
-            bin_width = bin_edges.diff()
-            w = 1.0 / bin_width
-            b = -bin_edges[:-1] / bin_width
-            # The last encoding channel is located in the same last column
-            # for all features. Thus, when a feature hits its last bin,
-            # the encoding look as follows:
-            # x --> [1, ..., 1, 0, ..., 0, (x - left_bin_edge) / bin_width]
-            self.weight[i, : len(bin_edges) - 2] = w[:-1]
-            self.weight[i, -1] = w[-1]
-            self.bias[i, : len(bin_edges) - 2] = b[:-1]
-            self.bias[i, -1] = b[-1]
-
-    def _encode1d(self, x: Tensor) -> Tensor:
-        x = torch.addcmul(self.bias, self.weight, x[..., None])
-        if x.shape[-1] > 1:
-            x = torch.cat(
-                [
-                    x[..., :1].clamp_max(1.0),
-                    x[..., 1:-1].clamp(0.0, 1.0),
-                    (
-                        x[..., -1:].clamp_min(0.0)
-                        if self.single_bin_mask is None
-                        else torch.where(
-                            # For features with only one bin,
-                            # the whole "piecewise-linear" encoding effectively behaves
-                            # like MinMax scaling
-                            # (assuming that the edges of the single bin
-                            #  are the minimum and maximum feature values).
-                            self.single_bin_mask[..., None],
-                            x[..., -1:],
-                            x[..., -1:].clamp_min(0.0),
-                        )
-                    ),
-                ],
-                dim=-1,
-            )
-        return x
-
-
-class PiecewiseLinearEncoding0dV2(_PiecewiseLinearEncodingV2):
-    """The flat version of the piecewise-linear encoding.
-
-    This class is provided only for completeness.
-    It is recommended to use the piecewise-linear *embeddings* (not the raw *encoding*).
-    """
-
-    def forward(self, x: Tensor) -> Tensor:
-        x = self._encode1d(x)
-        return x.flatten(-2) if self.mask is None else x[:, self.mask]
-
-
-class PiecewiseLinearEncoding1dV2(_PiecewiseLinearEncodingV2):
-    """The non-flat version of the piecewise-linear encoding.
-
-    This class is provided only for completeness.
-    It is recommended to use the piecewise-linear *embeddings* (not the raw *encoding*).
-    """
-
-    def forward(self, x: Tensor) -> Tensor:
-        return self._encode1d(x)
-
-
-class PiecewiseLinearEmbeddingsV2(nn.Module):
-    """An improved version of the piecewise-linear embeddings.
-
-    **Shape**
-
-    - Input: ``(*, n_features)``
-    - Output: ``(*, n_features, d_embedding)``
-
-    Compared to the original piecewise-linear embeddings from the paper
-    "On Embeddings for Numerical Features in Tabular Deep Learning":
-
-    * This implementation uses different parametrization and initialization,
-      which seems to improve performance on some datasets.
-    * This implementation is *significantly* faster.
-
-    The original implementation:
-    https://github.com/yandex-research/rtdl-num-embeddings/blob/24173f7023088d48a1a81765029aedd632316d56/package/rtdl_num_embeddings.py#L550
-    """
-
-    def __init__(self, bins: list[Tensor], d_embedding: int) -> None:
-        assert d_embedding > 0
-
-        super().__init__()
-        self.linear1 = rtdl_num_embeddings.LinearEmbeddings(len(bins), d_embedding)
-        self.encoding = PiecewiseLinearEncoding1dV2(bins)
-        self.linear2 = NLinear(
-            len(bins), self.encoding.weight.shape[-1], d_embedding, bias=False
-        )
-        # The piecewise-linear term is initialized with zeros.
-        # Thus, at initialization, the whole embedding is actually linear,
-        # and the piecewise-linear term is gradually learned during training.
-        nn.init.zeros_(self.linear2.weight)
-
-    def forward(self, x: Tensor) -> Tensor:
-        return self.linear1(x) + self.linear2(self.encoding(x))
+    def __init__(
+        self,
+        *args,
+        activation: bool = False,
+        version: None | Literal['A', 'B'] = 'B',
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs, activation=activation, version=version)
 
 
 class OneHotEncoding0d(nn.Module):
@@ -496,7 +343,7 @@ _CUSTOM_MODULES = {
         rtdl_num_embeddings.LinearEmbeddings,
         rtdl_num_embeddings.LinearReLUEmbeddings,
         rtdl_num_embeddings.PeriodicEmbeddings,
-        PiecewiseLinearEmbeddingsV2,
+        PiecewiseLinearEmbeddings,
         MLP,
     ]
 }
