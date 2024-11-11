@@ -16,6 +16,7 @@
 
 Table of contents
 - [Overview](#overview)
+  - [Standalone implementation](#standalone-implementation)
   - [Example](#example)
   - [Models](#models)
   - [Hyperparameters](#hyperparameters)
@@ -46,6 +47,24 @@ The repository provides:
 - Hyperparameter tuning spaces, tuned hyperparameters and metrics of the models on all 40+ datasets
   used in the paper.
 
+## Standalone implementation
+
+The `tabm_reference.py` is a standalone implementation of TabM (the `Model` class).
+In fact, this is simply the `Model` class from `bin/model.py` with the minimal necessary code
+from `lib`. The dependencies include:
+
+```
+torch>=2.0
+rtdl_num_embeddings>=0.0.11
+```
+
+Once the dependencies are installed, either clone this repository and add its path to `PYTHONPATH`,
+or simply copy `tabm_reference.py`. After that, the following will work:
+
+```python
+from tabm_reference import Model
+```
+
 ## Example
 
 The `example.ipynb` notebook provides a standalone example of training TabM.
@@ -59,16 +78,16 @@ The following models are available in this repository.
 > - $\mathrm{TabM}$ as the basic version.
 > - $\mathrm{TabM_{mini}^\dagger}$ as the advanced version.
 
-| Name                           | Comment                                        |
-| :----------------------------- | :--------------------------------------------- |
-| $\mathrm{MLP}$                 | The plain multilayer perceptron (MLP)          |
-| $\mathrm{MLP^\dagger}$         | MLP with the piecewise-linear embeddings       |
-| $\mathrm{MLP{-}PLR}$           | MLP with the periodic embeddings               |
-| $\mathrm{MLP{-}PLR_{lite}}$    | MLP with the lite periodic embeddings          |
-| $\mathrm{TabM_{mini}}$         | TabM-mini                                      |
-| $\mathrm{TabM}$                | TabM                                           |
-| $\mathrm{TabM_{mini}^\dagger}$ | TabM-mini with the piecewise-linear embeddings |
-| $\mathrm{TabM^\dagger}$        | TabM with the piecewise-linear embeddings      |
+| Name                            | Comment                                                  |
+| :------------------------------ | :------------------------------------------------------- |
+| $\mathrm{MLP}$                  | The plain multilayer perceptron (MLP)                    |
+| $\mathrm{MLP^\dagger}$          | MLP with the piecewise-linear embeddings                 |
+| $\mathrm{MLP^\ddagger}$         | MLP with the periodic embeddings (also known as MLP-PLR) |
+| $\mathrm{MLP^{\ddagger(lite)}}$ | MLP with the lite periodic embeddings                    |
+| $\mathrm{TabM_{mini}}$          | TabM-mini                                                |
+| $\mathrm{TabM}$                 | TabM                                                     |
+| $\mathrm{TabM_{mini}^\dagger}$  | TabM-mini with the piecewise-linear embeddings           |
+| $\mathrm{TabM^\dagger}$         | TabM with the piecewise-linear embeddings                |
 
 ## Hyperparameters
 
