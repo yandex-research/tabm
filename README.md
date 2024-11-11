@@ -431,15 +431,16 @@ The last line of the output log should look like this:
 
 ## Editor settings
 
-To make your Python language server more responsive, it is recommended to hide the `exp`
+To make the Python language server more responsive, it is recommended to hide the `exp`
 directory from the language server. For example, in Visual Studio Code, this can be achieved
 by adding the following to the local `.vscode/settings.json` file of this project:
 
-```json
+```jsonc
 {
-    "python.analysis.exclude": [
-        "**/exp",
-    ],
+    // NOTE
+    // If this setting is already configured on the user level,
+    // you may need to duplicate the user-level values here.
+    "python.analysis.exclude": [ "**/exp" ],
 }
 ```
 
