@@ -46,13 +46,12 @@ The repository provides:
 
 ## Standalone implementation
 
-The `tabm_reference.py` is a standalone implementation of TabM (the `Model` class).
-In fact, this is simply the `Model` class from `bin/model.py` with the minimal necessary code
-from `lib`. The dependencies include:
+The `tabm_reference.py` is a minimal standalone implementation of TabM (the `Model` class).
+The dependencies include:
 
 ```
-torch>=2.0
-rtdl_num_embeddings>=0.0.11
+torch>=2.0,<3
+rtdl_num_embeddings>=0.0.11,<0.1
 ```
 
 Once the dependencies are installed, either clone this repository and add its path to `PYTHONPATH`,
