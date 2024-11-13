@@ -1,7 +1,7 @@
 # TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
-&nbsp; :computer: [Example](./example.ipynb)
+&nbsp; :computer: [Usage](#using-tabm-in-practice)
 &nbsp; :books: [Other tabular DL projects](https://github.com/yandex-research/rtdl)
 
 *TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
@@ -11,7 +11,7 @@
 
 # Using TabM in practice
 
-To use TabM **outside of this repository**, you only need the following:
+To use TabM outside of this repository, you only need the following:
 
 - `tabm_reference.py`: the minimal single-file implementation.
 - `example.ipynb`: the end-to-end example of training TabM.
