@@ -13,8 +13,8 @@
 
 To use TabM outside of this repository, you only need the following:
 
-- `tabm_reference.py`: the minimal single-file implementation.
-- `example.ipynb`: the end-to-end example of training TabM.
+- [`tabm_reference.py`](./tabm_reference.py): the minimal single-file implementation.
+- [`example.ipynb`](./example.ipynb): the end-to-end example of training TabM.
 - [The section about hyperparameters](#hyperparameters).
 
 To use `tabm_reference.py`, install the following dependencies:

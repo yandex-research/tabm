@@ -1,5 +1,8 @@
 # License: https://github.com/yandex-research/tabm/blob/main/LICENSE
 
+# NOTE
+# The minimum required versions of the dependencies are specified in README.md.
+
 from typing import Literal
 
 import rtdl_num_embeddings
