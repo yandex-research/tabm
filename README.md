@@ -9,12 +9,33 @@
 > [!TIP]
 > For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](https://arxiv.org/pdf/2410.24210).
 
+# Using TabM in practice
+
+To use TabM **outside of this repository**, you only need the following:
+
+- `tabm_reference.py`: the minimal single-file implementation.
+- `example.ipynb`: the end-to-end example of training TabM.
+- [The section about hyperparameters](#hyperparameters).
+
+To use `tabm_reference.py`, install the following dependencies:
+
+```
+torch>=2.0,<3
+rtdl_num_embeddings>=0.0.11,<0.1
+```
+
+Then, either clone this repository and add its path to `PYTHONPATH`,
+or simply copy `tabm_reference.py`. After that, the following will work:
+
+```python
+from tabm_reference import Model
+```
+
 ---
 
 Table of contents
+- [Using TabM in practice](#using-tabm-in-practice)
 - [Overview](#overview)
-  - [Standalone implementation](#standalone-implementation)
-  - [Example](#example)
   - [Models](#models)
   - [Hyperparameters](#hyperparameters)
   - [Metrics](#metrics)
@@ -34,6 +55,8 @@ Table of contents
 - [Adding new datasets](#adding-new-datasets)
 - [How to cite](#how-to-cite)
 
+
+
 ---
 
 # Overview
@@ -43,27 +66,6 @@ The repository provides:
 - The code for training and hyperparameter tuning used in the paper.
 - Hyperparameter tuning spaces, tuned hyperparameters and metrics of the models on all 40+ datasets
   used in the paper.
-
-## Standalone implementation
-
-The `tabm_reference.py` is a minimal standalone implementation of TabM (the `Model` class).
-The dependencies include:
-
-```
-torch>=2.0,<3
-rtdl_num_embeddings>=0.0.11,<0.1
-```
-
-Once the dependencies are installed, either clone this repository and add its path to `PYTHONPATH`,
-or simply copy `tabm_reference.py`. After that, the following will work:
-
-```python
-from tabm_reference import Model
-```
-
-## Example
-
-The `example.ipynb` notebook provides a standalone example of training TabM.
 
 ## Models
 
@@ -197,8 +199,12 @@ for TabM with the AdamW optimizer:
 
 **Hyperparameter tuning**
 
+> [!NOTE]
+> This section only provides general advice on hyperparameter tuning.
+> Running the hyperparameter tuning code used in the paper is discussed later in this document, and requires setting up the environment.
+
 If achieving the highest possible performance is not critical,
-then 30-50 iterations of the TPE sampler from Optuna should result in a somewhat reasonable configuration.
+then 30-50 iterations of the [TPE sampler from Optuna](https://optuna.readthedocs.io/en/stable/reference/samplers/generated/optuna.samplers.TPESampler.html) should result in a somewhat reasonable configuration.
 It the paper:
 - For MLP, 100 iterations were used.
 - For TabM, 100 iterations were used on smaller datasets, and 50 iterations on larger datasets.
