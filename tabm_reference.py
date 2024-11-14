@@ -3,7 +3,8 @@
 # NOTE
 # The minimum required versions of the dependencies are specified in README.md.
 
-from typing import Literal
+import itertools
+from typing import Any, Literal
 
 import rtdl_num_embeddings
 import torch
@@ -286,9 +287,6 @@ class MLP(nn.Module):
         return x
 
 
-# ======================================================================================
-# Functions
-# ======================================================================================
 def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
     """Replace torch.nn.Linear modules with LinearEfficientEnsemble.
 
@@ -313,9 +311,7 @@ def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
             make_efficient_ensemble(submodule, **kwargs)
 
 
-def _get_first_ensemble_layer(
-    backbone: MLP,
-) -> LinearEfficientEnsemble:
+def _get_first_ensemble_layer(backbone: MLP) -> LinearEfficientEnsemble:
     if isinstance(backbone, MLP):
         return backbone.blocks[0][0]  # type: ignore[code]
     else:
@@ -380,6 +376,59 @@ def make_module(type: str, *args, **kwargs) -> nn.Module:
 
 
 # ======================================================================================
+# Optimization
+# ======================================================================================
+def default_zero_weight_decay_condition(
+    module_name: str, module: nn.Module, parameter_name: str, parameter: nn.Parameter
+):
+    from rtdl_num_embeddings import _Periodic
+
+    del module_name, parameter
+    return parameter_name.endswith('bias') or isinstance(
+        module,
+        nn.BatchNorm1d
+        | nn.LayerNorm
+        | nn.InstanceNorm1d
+        | rtdl_num_embeddings.LinearEmbeddings
+        | rtdl_num_embeddings.LinearReLUEmbeddings
+        | _Periodic,
+    )
+
+
+def make_parameter_groups(
+    module: nn.Module,
+    zero_weight_decay_condition=default_zero_weight_decay_condition,
+    custom_groups: None | list[dict[str, Any]] = None,
+) -> list[dict[str, Any]]:
+    if custom_groups is None:
+        custom_groups = []
+    custom_params = frozenset(
+        itertools.chain.from_iterable(group['params'] for group in custom_groups)
+    )
+    assert len(custom_params) == sum(
+        len(group['params']) for group in custom_groups
+    ), 'Parameters in custom_groups must not intersect'
+    zero_wd_params = frozenset(
+        p
+        for mn, m in module.named_modules()
+        for pn, p in m.named_parameters()
+        if p not in custom_params and zero_weight_decay_condition(mn, m, pn, p)
+    )
+    default_group = {
+        'params': [
+            p
+            for p in module.parameters()
+            if p not in custom_params and p not in zero_wd_params
+        ]
+    }
+    return [
+        default_group,
+        {'params': list(zero_wd_params), 'weight_decay': 0.0},
+        *custom_groups,
+    ]
+
+
+# ======================================================================================
 # The model
 # ======================================================================================
 class Model(nn.Module):
@@ -402,14 +451,14 @@ class Model(nn.Module):
             'tabm-mini',
             #
             # TabM-mini. The first adapter is initialized from the normal distribution.
-            # This is used in Section 5.1.
+            # This is used in Section 5.1 of the paper.
             'tabm-mini-normal',
             #
             # TabM
             'tabm',
             #
             # TabM. The first adapter is initialized from the normal distribution.
-            # This variation was is not used in the paper, but there is a preliminary
+            # This variation is not used in the paper, but there is a preliminary
             # evidence that may be a better default strategy.
             'tabm-normal',
         ],
