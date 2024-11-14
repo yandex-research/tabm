@@ -506,16 +506,16 @@ and from the `bin/model.py` script, where `Model` is used.
 
 The following table is the mapping between the models and their subdirectories in `exp`.
 
-| Model                          | Experiments                     |
-| :----------------------------- | :------------------------------ |
-| $\mathrm{MLP}$                 | `exp/mlp`                       |
-| $\mathrm{MLP^\dagger}$         | `exp/mlp-piecewiselinear`       |
-| $\mathrm{MLP{-}PLR}$           | `exp/mlp-periodic`              |
-| $\mathrm{MLP{-}PLR(lite)}$     | `exp/mlp-periodiclite`          |
-| $\mathrm{TabM_{mini}}$         | `exp/tabm-mini`                 |
-| $\mathrm{TabM}$                | `exp/tabm`                      |
-| $\mathrm{TabM_{mini}^\dagger}$ | `exp/tabm-mini-piecewiselinear` |
-| $\mathrm{TabM^\dagger}$        | `exp/tabm-piecewiselinear`      |
+| Model                           | Experiments                     |
+| :------------------------------ | :------------------------------ |
+| $\mathrm{MLP}$                  | `exp/mlp`                       |
+| $\mathrm{MLP^\dagger}$          | `exp/mlp-piecewiselinear`       |
+| $\mathrm{MLP^\ddagger}$         | `exp/mlp-periodic`              |
+| $\mathrm{MLP^{\ddagger(lite)}}$ | `exp/mlp-periodiclite`          |
+| $\mathrm{TabM_{mini}}$          | `exp/tabm-mini`                 |
+| $\mathrm{TabM}$                 | `exp/tabm`                      |
+| $\mathrm{TabM_{mini}^\dagger}$  | `exp/tabm-mini-piecewiselinear` |
+| $\mathrm{TabM^\dagger}$         | `exp/tabm-piecewiselinear`      |
 
 ## Common guidelines
 
