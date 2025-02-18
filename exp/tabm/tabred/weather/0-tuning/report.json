@@ -1,7 +1,7 @@
 {
     "function": "bin.tune.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 0,
@@ -28,7 +28,7 @@
                     "_tune_",
                     "loguniform",
                     0.0001,
-                    0.005
+                    0.003
                 ],
                 "weight_decay": [
                     "_tune_",
@@ -41,6 +41,7 @@
             "model": {
                 "arch_type": "tabm",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": [
@@ -70,7 +71,7 @@
     "best": {
         "function": "bin.model.main",
         "gpus": [
-            "NVIDIA A100-SXM4-40GB"
+            "NVIDIA A100-SXM4-80GB"
         ],
         "config": {
             "seed": 0,
@@ -86,53 +87,51 @@
             },
             "optimizer": {
                 "type": "AdamW",
-                "lr": 0.0025924824813021723,
-                "weight_decay": 0.0
+                "lr": 0.0027867656958315487,
+                "weight_decay": 0.0015897005987437303
             },
             "model": {
                 "arch_type": "tabm",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
-                    "n_blocks": 4,
-                    "d_block": 688,
+                    "n_blocks": 5,
+                    "d_block": 896,
                     "dropout": 0.0
                 }
             }
         },
-        "n_parameters": 1760576,
+        "n_parameters": 3739744,
         "prediction_type": "labels",
         "epoch_size": 333,
-        "best_step": 34965,
+        "best_step": 19647,
         "metrics": {
             "train": {
-                "rmse": 1.0155324453582852,
-                "mae": 0.7728022933006287,
-                "r2": 0.9316838473957473,
-                "score": -1.0155324453582852
+                "rmse": 0.9994335060099463,
+                "mae": 0.7620818018913269,
+                "r2": 0.933832660497845,
+                "score": -0.9994335060099463
             },
             "val": {
-                "rmse": 1.5436128841156032,
-                "mae": 1.1190751791000366,
-                "r2": 0.8499650027615875,
-                "score": -1.5436128841156032
+                "rmse": 1.5418340832647242,
+                "mae": 1.1231752634048462,
+                "r2": 0.850310594789745,
+                "score": -1.5418340832647242
             },
             "test": {
-                "rmse": 1.4774123879419008,
-                "mae": 1.0715755224227905,
-                "r2": 0.8528733806986775,
-                "score": -1.4774123879419008
+                "rmse": 1.4727929656418668,
+                "mae": 1.0724618434906006,
+                "r2": 0.8537919951726438,
+                "score": -1.4727929656418668
             }
         },
-        "time": "0:14:45.887542",
+        "time": "0:07:08.974047",
         "chunk_size": null,
         "eval_batch_size": 32768,
-        "trial_id": 25,
-        "tuning_time": "3:15:37.797331"
+        "trial_id": 22,
+        "tuning_time": "1:49:45.817143"
     },
-    "time": "6:29:36.818407",
-    "n_completed_trials": 50,
-    "continuations": [
-        43
-    ]
+    "time": "4:50:07.543447",
+    "n_completed_trials": 50
 }

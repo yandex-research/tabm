@@ -1,7 +1,7 @@
 {
     "function": "bin.tune.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 0,
@@ -28,7 +28,7 @@
                     "_tune_",
                     "loguniform",
                     0.0001,
-                    0.005
+                    0.003
                 ],
                 "weight_decay": [
                     "_tune_",
@@ -41,6 +41,7 @@
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": [
@@ -65,7 +66,7 @@
                     ]
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
+                    "type": "PiecewiseLinearEmbeddingsV2",
                     "d_embedding": [
                         "_tune_",
                         "int",
@@ -88,7 +89,7 @@
     "best": {
         "function": "bin.model.main",
         "gpus": [
-            "NVIDIA A100-SXM4-40GB"
+            "NVIDIA A100-SXM4-80GB"
         ],
         "config": {
             "seed": 0,
@@ -104,57 +105,58 @@
             },
             "optimizer": {
                 "type": "AdamW",
-                "lr": 0.002982775826538309,
-                "weight_decay": 0.08918188484216447
+                "lr": 0.0012255991002097077,
+                "weight_decay": 0.0
             },
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": 3,
-                    "d_block": 480,
+                    "d_block": 880,
                     "dropout": 0.0
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
-                    "d_embedding": 20
+                    "type": "PiecewiseLinearEmbeddingsV2",
+                    "d_embedding": 8
                 }
             },
             "bins": {
-                "n_bins": 44
+                "n_bins": 28
             }
         },
-        "n_parameters": 656192,
+        "n_parameters": 1700208,
         "prediction_type": "labels",
         "epoch_size": 40,
-        "best_step": 2080,
+        "best_step": 2280,
         "metrics": {
             "train": {
-                "rmse": 0.001501315261350458,
-                "mae": 0.0011410232400521636,
-                "r2": 0.9501744624904536,
-                "score": -0.001501315261350458
+                "rmse": 0.001486387623577916,
+                "mae": 0.00113700982183218,
+                "r2": 0.9511603685275044,
+                "score": -0.001486387623577916
             },
             "val": {
-                "rmse": 0.0017712405557101423,
-                "mae": 0.0013237698003649712,
-                "r2": 0.9301657370269816,
-                "score": -0.0017712405557101423
+                "rmse": 0.0017684849456214024,
+                "mae": 0.0013197642983868718,
+                "r2": 0.9303828546219474,
+                "score": -0.0017684849456214024
             },
             "test": {
-                "rmse": 0.0017616745421811582,
-                "mae": 0.0013192086480557919,
-                "r2": 0.9309259465385904,
-                "score": -0.0017616745421811582
+                "rmse": 0.001749450095453454,
+                "mae": 0.0013082518707960844,
+                "r2": 0.9318812487715467,
+                "score": -0.001749450095453454
             }
         },
-        "time": "0:00:08.327831",
+        "time": "0:00:08.735650",
         "chunk_size": null,
         "eval_batch_size": 32768,
-        "trial_id": 68,
-        "tuning_time": "0:11:05.166887"
+        "trial_id": 60,
+        "tuning_time": "0:11:58.463255"
     },
-    "time": "0:15:25.223667",
+    "time": "0:20:10.074571",
     "n_completed_trials": 100
 }

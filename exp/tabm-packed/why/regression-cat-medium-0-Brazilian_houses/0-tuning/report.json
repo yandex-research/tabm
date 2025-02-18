@@ -1,0 +1,139 @@
+{
+    "function": "bin.tune.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 0,
+        "function": "bin.model.main",
+        "n_trials": 100,
+        "sampler": {
+            "n_startup_trials": 20
+        },
+        "space": {
+            "seed": 0,
+            "batch_size": 256,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-0-Brazilian_houses",
+                "num_policy": "noisy-quantile",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": [
+                    "_tune_",
+                    "loguniform",
+                    3e-05,
+                    0.003
+                ],
+                "weight_decay": [
+                    "_tune_",
+                    "?loguniform",
+                    0.0,
+                    0.0001,
+                    0.1
+                ]
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": [
+                        "_tune_",
+                        "int",
+                        1,
+                        5
+                    ],
+                    "d_block": [
+                        "_tune_",
+                        "int",
+                        64,
+                        1024,
+                        16
+                    ],
+                    "dropout": [
+                        "_tune_",
+                        "?uniform",
+                        0.0,
+                        0.0,
+                        0.5
+                    ]
+                }
+            }
+        }
+    },
+    "best": {
+        "function": "bin.model.main",
+        "gpus": [
+            "NVIDIA A100-SXM4-80GB"
+        ],
+        "config": {
+            "seed": 0,
+            "batch_size": 256,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-0-Brazilian_houses",
+                "num_policy": "noisy-quantile",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": 0.0029351680044565893,
+                "weight_decay": 0.0
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": 1,
+                    "d_block": 112,
+                    "dropout": 0.0
+                }
+            }
+        },
+        "n_parameters": 68128,
+        "prediction_type": "labels",
+        "epoch_size": 30,
+        "best_step": 27780,
+        "metrics": {
+            "train": {
+                "rmse": 0.008875486934893873,
+                "mae": 0.005583872087299824,
+                "r2": 0.9998776381463383,
+                "score": -0.008875486934893873
+            },
+            "val": {
+                "rmse": 0.016910950105092838,
+                "mae": 0.007959792390465736,
+                "r2": 0.9995568411607632,
+                "score": -0.016910950105092838
+            },
+            "test": {
+                "rmse": 0.028005553665543727,
+                "mae": 0.008199485018849373,
+                "r2": 0.9987167831769271,
+                "score": -0.028005553665543727
+            }
+        },
+        "time": "0:00:55.232684",
+        "chunk_size": null,
+        "eval_batch_size": 32768,
+        "trial_id": 46,
+        "tuning_time": "0:23:50.237908"
+    },
+    "time": "1:02:34.712085",
+    "n_completed_trials": 100
+}

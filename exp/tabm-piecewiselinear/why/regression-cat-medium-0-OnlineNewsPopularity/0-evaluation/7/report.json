@@ -1,7 +1,7 @@
 {
     "function": "bin.model.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 7,
@@ -17,52 +17,53 @@
         },
         "optimizer": {
             "type": "AdamW",
-            "lr": 0.0023797300220446886,
-            "weight_decay": 0.0267514697542703
+            "lr": 0.0016250310047884735,
+            "weight_decay": 0.00017560180370122442
         },
         "model": {
             "arch_type": "tabm",
             "k": 32,
+            "share_training_batches": false,
             "backbone": {
                 "type": "MLP",
-                "n_blocks": 3,
-                "d_block": 960,
-                "dropout": 0.2973213186657744
+                "n_blocks": 2,
+                "d_block": 832,
+                "dropout": 0.0
             },
             "num_embeddings": {
-                "type": "PiecewiseLinearEmbeddings",
-                "d_embedding": 20
+                "type": "PiecewiseLinearEmbeddingsV2",
+                "d_embedding": 8
             }
         },
         "bins": {
-            "n_bins": 34
+            "n_bins": 13
         }
     },
-    "n_parameters": 3072688,
+    "n_parameters": 1192632,
     "prediction_type": "labels",
     "epoch_size": 40,
-    "best_step": 600,
+    "best_step": 400,
     "metrics": {
         "train": {
-            "rmse": 0.7541241108670803,
-            "mae": 0.5597723722457886,
-            "r2": 0.3431162408789863,
-            "score": -0.7541241108670803
+            "rmse": 0.7711261158868783,
+            "mae": 0.5701613426208496,
+            "r2": 0.31316296879609073,
+            "score": -0.7711261158868783
         },
         "val": {
-            "rmse": 0.8388983795086703,
-            "mae": 0.6222776174545288,
-            "r2": 0.16538836963816905,
-            "score": -0.8388983795086703
+            "rmse": 0.8382046695651976,
+            "mae": 0.6221696734428406,
+            "r2": 0.16676812990226275,
+            "score": -0.8382046695651976
         },
         "test": {
-            "rmse": 0.8560695193461701,
-            "mae": 0.6303859949111938,
-            "r2": 0.16012478932426044,
-            "score": -0.8560695193461701
+            "rmse": 0.8545761328743681,
+            "mae": 0.6297340989112854,
+            "r2": 0.1630524467829475,
+            "score": -0.8545761328743681
         }
     },
-    "time": "0:00:11.151445",
+    "time": "0:00:05.503475",
     "chunk_size": null,
     "eval_batch_size": 32768
 }

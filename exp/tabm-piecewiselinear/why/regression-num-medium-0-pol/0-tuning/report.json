@@ -1,7 +1,7 @@
 {
     "function": "bin.tune.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 0,
@@ -28,7 +28,7 @@
                     "_tune_",
                     "loguniform",
                     0.0001,
-                    0.005
+                    0.003
                 ],
                 "weight_decay": [
                     "_tune_",
@@ -41,6 +41,7 @@
             "model": {
                 "arch_type": "tabm",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": [
@@ -65,7 +66,7 @@
                     ]
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
+                    "type": "PiecewiseLinearEmbeddingsV2",
                     "d_embedding": [
                         "_tune_",
                         "int",
@@ -88,7 +89,7 @@
     "best": {
         "function": "bin.model.main",
         "gpus": [
-            "NVIDIA A100-SXM4-40GB"
+            "NVIDIA A100-SXM4-80GB"
         ],
         "config": {
             "seed": 0,
@@ -104,57 +105,58 @@
             },
             "optimizer": {
                 "type": "AdamW",
-                "lr": 0.0007174123972972572,
-                "weight_decay": 0.0010428387942827905
+                "lr": 0.0014729472921033745,
+                "weight_decay": 0.00038967414469659933
             },
             "model": {
                 "arch_type": "tabm",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": 3,
-                    "d_block": 768,
-                    "dropout": 0.15042214777905838
+                    "d_block": 480,
+                    "dropout": 0.11448213430161622
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
-                    "d_embedding": 12
+                    "type": "PiecewiseLinearEmbeddingsV2",
+                    "d_embedding": 16
                 }
             },
             "bins": {
-                "n_bins": 32
+                "n_bins": 23
             }
         },
-        "n_parameters": 1661072,
+        "n_parameters": 822464,
         "prediction_type": "labels",
         "epoch_size": 40,
-        "best_step": 4680,
+        "best_step": 4000,
         "metrics": {
             "train": {
-                "rmse": 1.6044338631317716,
-                "mae": 0.7391980886459351,
-                "r2": 0.9985048494971471,
-                "score": -1.6044338631317716
+                "rmse": 1.3847477619864481,
+                "mae": 0.6191214919090271,
+                "r2": 0.9988862631409334,
+                "score": -1.3847477619864481
             },
             "val": {
-                "rmse": 2.303083993450932,
-                "mae": 0.9434148073196411,
-                "r2": 0.9970230786612327,
-                "score": -2.303083993450932
+                "rmse": 2.094742041755161,
+                "mae": 0.8303280472755432,
+                "r2": 0.9975373148316482,
+                "score": -2.094742041755161
             },
             "test": {
-                "rmse": 2.3761712248144558,
-                "mae": 0.9265767335891724,
-                "r2": 0.9968225642159252,
-                "score": -2.3761712248144558
+                "rmse": 2.378245194514374,
+                "mae": 0.8755431771278381,
+                "r2": 0.996817014842526,
+                "score": -2.378245194514374
             }
         },
-        "time": "0:00:25.290357",
+        "time": "0:00:17.954665",
         "chunk_size": null,
         "eval_batch_size": 32768,
-        "trial_id": 33,
-        "tuning_time": "0:11:43.448467"
+        "trial_id": 48,
+        "tuning_time": "0:19:33.706417"
     },
-    "time": "0:31:02.832255",
+    "time": "0:36:17.685543",
     "n_completed_trials": 100
 }

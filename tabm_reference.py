@@ -463,12 +463,16 @@ class Model(nn.Module):
             'tabm-normal',
         ],
         k: None | int = None,
+        share_training_batches: bool = True,
     ) -> None:
         # >>> Validate arguments.
         assert n_num_features >= 0
         assert n_num_features or cat_cardinalities
         if arch_type == 'plain':
             assert k is None
+            assert (
+                share_training_batches
+            ), 'If `arch_type` is set to "plain", then `simple` must remain True'
         else:
             assert k is not None
             assert k > 0
@@ -572,6 +576,7 @@ class Model(nn.Module):
         # >>>
         self.arch_type = arch_type
         self.k = k
+        self.share_training_batches = share_training_batches
 
     def forward(
         self, x_num: None | Tensor = None, x_cat: None | Tensor = None
@@ -587,7 +592,12 @@ class Model(nn.Module):
         x = torch.column_stack([x_.flatten(1, -1) for x_ in x])
 
         if self.k is not None:
-            x = x[:, None].expand(-1, self.k, -1)  # (B, D) -> (B, K, D)
+            if self.share_training_batches or not self.training:
+                # (B, D) -> (B, K, D)
+                x = x[:, None].expand(-1, self.k, -1)
+            else:
+                # (B * K, D) -> (B, K, D)
+                x = x.reshape(len(x) // self.k, self.k, *x.shape[1:])
             if self.minimal_ensemble_adapter is not None:
                 x = self.minimal_ensemble_adapter(x)
         else:

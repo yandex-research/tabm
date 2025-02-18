@@ -1,4 +1,4 @@
-# TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling<!-- omit in toc -->
+# TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling (ICLR 2025)<!-- omit in toc -->
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
 &nbsp; :computer: [Usage](#using-tabm-in-practice)
@@ -187,15 +187,18 @@ for TabM with the AdamW optimizer:
 > [!NOTE]
 > The suggested hyperparameters may change in the future.
 
-| Hyperparameter | $\mathrm{TabM}$ | $\mathrm{TabM_{mini}^\dagger}$ |
-| :------------- | :-------------- | :----------------------------- |
-| `k`            | 32              | 32                             |
-| Depth          | 3               | 2                              |
-| Width          | 512             | 512                            |
-| Dropout        | 0.1             | TODO                           |
-| Bins           | N/A             | TODO                           |
-| Learning rate  | 0.002           | TODO                           |
-| Weight decay   | 0.0003          | TODO                           |
+| Hyperparameter | $\mathrm{TabM}$ |
+| :------------- | :-------------- |
+| `k`            | 32              |
+| Depth          | 3               |
+| Width          | 512             |
+| Dropout        | 0.1             |
+| Bins           | N/A             |
+| Learning rate  | 0.002           |
+| Weight decay   | 0.0003          |
+
+When using embeddings for numerical features as in $\mathrm{TabM_{mini}^\dagger}$, the default
+depth can be reduced to $2$.
 
 **Hyperparameter tuning**
 
@@ -579,7 +582,7 @@ For example:
 
 ```
 # The config is stored at exp/<any/path>/0-evaluation/0.toml
-python bin/evaluate.py exp/<any/path>/0-evaluation
+python bin/evaluate.py exp/<any/path>/0-evaluation --function "bin.model.main"
 ```
 
 ## Ensembling
@@ -654,11 +657,10 @@ data/
 # How to cite
 
 ```
-@article{gorishniy2024tabm,
+@inproceedings{gorishniy2024tabm,
     title={{TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling}},
     author={Yury Gorishniy and Akim Kotelnikov and Artem Babenko},
-    journal={{arXiv}},
-    volume={2410.24210},
-    year={2024},
+    booktitle={ICLR},
+    year={2025},
 }
 ```

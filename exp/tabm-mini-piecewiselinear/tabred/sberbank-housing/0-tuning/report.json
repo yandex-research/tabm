@@ -1,7 +1,7 @@
 {
     "function": "bin.tune.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 0,
@@ -29,7 +29,7 @@
                     "_tune_",
                     "loguniform",
                     0.0001,
-                    0.005
+                    0.003
                 ],
                 "weight_decay": [
                     "_tune_",
@@ -42,6 +42,7 @@
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": [
@@ -66,7 +67,7 @@
                     ]
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
+                    "type": "PiecewiseLinearEmbeddingsV2",
                     "d_embedding": [
                         "_tune_",
                         "int",
@@ -89,7 +90,7 @@
     "best": {
         "function": "bin.model.main",
         "gpus": [
-            "NVIDIA A100-SXM4-40GB"
+            "NVIDIA A100-SXM4-80GB"
         ],
         "config": {
             "seed": 0,
@@ -106,57 +107,58 @@
             },
             "optimizer": {
                 "type": "AdamW",
-                "lr": 0.003774428403349216,
-                "weight_decay": 0.0
+                "lr": 0.0008363771605209775,
+                "weight_decay": 0.00020122942475059552
             },
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
-                    "n_blocks": 2,
-                    "d_block": 304,
-                    "dropout": 0.05646215026492869
+                    "n_blocks": 3,
+                    "d_block": 528,
+                    "dropout": 0.3143893463355451
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
-                    "d_embedding": 28
+                    "type": "PiecewiseLinearEmbeddingsV2",
+                    "d_embedding": 32
                 }
             },
             "bins": {
-                "n_bins": 113
+                "n_bins": 73
             }
         },
-        "n_parameters": 4777524,
+        "n_parameters": 8102640,
         "prediction_type": "labels",
         "epoch_size": 74,
-        "best_step": 370,
+        "best_step": 666,
         "metrics": {
             "train": {
-                "rmse": 0.24613638160441406,
-                "mae": 0.12414974719285965,
-                "r2": 0.6129514313575414,
-                "score": -0.24613638160441406
+                "rmse": 0.2233094121685869,
+                "mae": 0.11859750747680664,
+                "r2": 0.6814131344595284,
+                "score": -0.2233094121685869
             },
             "val": {
-                "rmse": 0.23495991358609228,
-                "mae": 0.1303320676088333,
-                "r2": 0.6312442415369348,
-                "score": -0.23495991358609228
+                "rmse": 0.23515346310000176,
+                "mae": 0.12786924839019775,
+                "r2": 0.6306364719981079,
+                "score": -0.23515346310000176
             },
             "test": {
-                "rmse": 0.23465412526090149,
-                "mae": 0.1439359188079834,
-                "r2": 0.6237331575162822,
-                "score": -0.23465412526090149
+                "rmse": 0.23189754005086005,
+                "mae": 0.14264929294586182,
+                "r2": 0.632521563425345,
+                "score": -0.23189754005086005
             }
         },
-        "time": "0:00:14.335506",
+        "time": "0:00:39.040937",
         "chunk_size": null,
         "eval_batch_size": 32768,
-        "trial_id": 41,
-        "tuning_time": "0:13:46.417445"
+        "trial_id": 33,
+        "tuning_time": "0:17:42.339058"
     },
-    "time": "0:16:14.124908",
+    "time": "0:27:07.469654",
     "n_completed_trials": 50
 }

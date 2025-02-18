@@ -18,12 +18,13 @@ num_policy = "noisy-quantile"
 
 [space.optimizer]
 type = "AdamW"
-lr = ["_tune_", "loguniform", 0.0001, 0.005]
+lr = ["_tune_", "loguniform", 0.0001, 0.003]
 weight_decay = ["_tune_", "?loguniform", 0.0, 0.0001, 0.1]
 
 [space.model]
 arch_type = "tabm-mini"
 k = 32
+share_training_batches = false
 
 [space.model.backbone]
 type = "MLP"
@@ -32,7 +33,7 @@ d_block = ["_tune_", "int", 64, 1024, 16]
 dropout = ["_tune_", "?uniform", 0.0, 0.0, 0.5]
 
 [space.model.num_embeddings]
-type = "PiecewiseLinearEmbeddings"
+type = "PiecewiseLinearEmbeddingsV2"
 d_embedding = ["_tune_", "int", 8, 32, 4]
 
 [space.bins]

@@ -78,6 +78,9 @@ def _init_first_adapter(
         weight[:, section_bounds[i] : section_bounds[i + 1]] = w
 
 
+DEFAULT_SHARE_TRAINING_BATCHES = True
+
+
 class Model(nn.Module):
     """MLP & TabM."""
 
@@ -110,12 +113,16 @@ class Model(nn.Module):
             'tabm-normal',
         ],
         k: None | int = None,
+        share_training_batches: bool = DEFAULT_SHARE_TRAINING_BATCHES,
     ) -> None:
         # >>> Validate arguments.
         assert n_num_features >= 0
         assert n_num_features or cat_cardinalities
         if arch_type == 'plain':
             assert k is None
+            assert (
+                share_training_batches
+            ), 'If `arch_type` is set to "plain", then `simple` must remain True'
         else:
             assert k is not None
             assert k > 0
@@ -218,6 +225,7 @@ class Model(nn.Module):
         # >>>
         self.arch_type = arch_type
         self.k = k
+        self.share_training_batches = share_training_batches
 
     def forward(
         self, x_num: None | Tensor = None, x_cat: None | Tensor = None
@@ -233,7 +241,12 @@ class Model(nn.Module):
         x = torch.column_stack([x_.flatten(1, -1) for x_ in x])
 
         if self.k is not None:
-            x = x[:, None].expand(-1, self.k, -1)  # (B, D) -> (B, K, D)
+            if self.share_training_batches or not self.training:
+                # (B, D) -> (B, K, D)
+                x = x[:, None].expand(-1, self.k, -1)
+            else:
+                # (B * K, D) -> (B, K, D)
+                x = x.reshape(len(x) // self.k, self.k, *x.shape[1:])
             if self.minimal_ensemble_adapter is not None:
                 x = self.minimal_ensemble_adapter(x)
         else:
@@ -397,6 +410,9 @@ def main(
         2048 if config.get('compile', False) else 32768,
     )
     chunk_size = None
+    share_training_batches = config['model'].get(
+        'share_training_batches', DEFAULT_SHARE_TRAINING_BATCHES
+    )
 
     optimizer = lib.deep.make_optimizer(
         **config['optimizer'], params=lib.deep.make_parameter_groups(model)
@@ -409,7 +425,14 @@ def main(
     )
 
     def loss_fn(y_pred: Tensor, y_true: Tensor) -> Tensor:
-        return _loss_fn(y_pred.flatten(0, 1), y_true.repeat_interleave(y_pred.shape[1]))
+        return _loss_fn(
+            y_pred.flatten(0, 1),
+            (
+                y_true.repeat_interleave(y_pred.shape[1])
+                if share_training_batches
+                else y_true
+            ),
+        )
 
     # The following generator is used only for creating training batches,
     # so the random seed fully determines the sequence of training objects.
@@ -539,14 +562,25 @@ def main(
 
         model.train()
         epoch_losses = []
-        for batch_idx in tqdm(
+        batches = (
             torch.randperm(
-                len(dataset.data['y']['train']),
+                dataset.size('train'),
                 generator=batch_generator,
                 device=device,
-            ).split(batch_size),
-            desc=f'Epoch {step // epoch_size} Step {step}',
-        ):
+            ).split(batch_size)
+            if share_training_batches
+            else [
+                x.transpose(0, 1).flatten()
+                for x in torch.rand(
+                    (config['model']['k'], dataset.size('train')),
+                    generator=batch_generator,
+                    device=device,
+                )
+                .argsort(dim=1)
+                .split(batch_size, dim=1)
+            ]
+        )
+        for batch_idx in tqdm(batches, desc=f'Epoch {step // epoch_size} Step {step}'):
             loss, new_chunk_size = lib.deep.zero_grad_forward_backward(
                 optimizer,
                 lambda idx: loss_fn(apply_model('train', idx), Y_train[idx]),

@@ -1,0 +1,139 @@
+{
+    "function": "bin.tune.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 0,
+        "function": "bin.model.main",
+        "n_trials": 100,
+        "sampler": {
+            "n_startup_trials": 20
+        },
+        "space": {
+            "seed": 0,
+            "batch_size": 512,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-large-0-nyc-taxi-green-dec-2016",
+                "num_policy": "noisy-quantile",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": [
+                    "_tune_",
+                    "loguniform",
+                    3e-05,
+                    0.003
+                ],
+                "weight_decay": [
+                    "_tune_",
+                    "?loguniform",
+                    0.0,
+                    0.0001,
+                    0.1
+                ]
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": [
+                        "_tune_",
+                        "int",
+                        1,
+                        5
+                    ],
+                    "d_block": [
+                        "_tune_",
+                        "int",
+                        64,
+                        1024,
+                        16
+                    ],
+                    "dropout": [
+                        "_tune_",
+                        "?uniform",
+                        0.0,
+                        0.0,
+                        0.5
+                    ]
+                }
+            }
+        }
+    },
+    "best": {
+        "function": "bin.model.main",
+        "gpus": [
+            "NVIDIA A100-SXM4-80GB"
+        ],
+        "config": {
+            "seed": 0,
+            "batch_size": 512,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-large-0-nyc-taxi-green-dec-2016",
+                "num_policy": "noisy-quantile",
+                "cat_policy": "ordinal"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": 0.0010637101769168447,
+                "weight_decay": 0.0
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": 5,
+                    "d_block": 64,
+                    "dropout": 0.0
+                }
+            }
+        },
+        "n_parameters": 593952,
+        "prediction_type": "labels",
+        "epoch_size": 98,
+        "best_step": 5782,
+        "metrics": {
+            "train": {
+                "rmse": 0.36130232847763677,
+                "mae": 0.23655374348163605,
+                "r2": 0.6317549177909358,
+                "score": -0.36130232847763677
+            },
+            "val": {
+                "rmse": 0.3869456001534371,
+                "mae": 0.2495391070842743,
+                "r2": 0.5811832223458809,
+                "score": -0.3869456001534371
+            },
+            "test": {
+                "rmse": 0.38800044507561554,
+                "mae": 0.24963848292827606,
+                "r2": 0.5772164698681479,
+                "score": -0.38800044507561554
+            }
+        },
+        "time": "0:00:24.334561",
+        "chunk_size": null,
+        "eval_batch_size": 32768,
+        "trial_id": 71,
+        "tuning_time": "0:42:17.564613"
+    },
+    "time": "0:53:37.853289",
+    "n_completed_trials": 100
+}

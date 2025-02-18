@@ -1,7 +1,7 @@
 {
     "function": "bin.tune.main",
     "gpus": [
-        "NVIDIA A100-SXM4-40GB"
+        "NVIDIA A100-SXM4-80GB"
     ],
     "config": {
         "seed": 0,
@@ -28,7 +28,7 @@
                     "_tune_",
                     "loguniform",
                     0.0001,
-                    0.005
+                    0.003
                 ],
                 "weight_decay": [
                     "_tune_",
@@ -41,6 +41,7 @@
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
                     "n_blocks": [
@@ -65,7 +66,7 @@
                     ]
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
+                    "type": "PiecewiseLinearEmbeddingsV2",
                     "d_embedding": [
                         "_tune_",
                         "int",
@@ -88,7 +89,7 @@
     "best": {
         "function": "bin.model.main",
         "gpus": [
-            "NVIDIA A100-SXM4-40GB"
+            "NVIDIA A100-SXM4-80GB"
         ],
         "config": {
             "seed": 0,
@@ -104,57 +105,58 @@
             },
             "optimizer": {
                 "type": "AdamW",
-                "lr": 0.004247880145110137,
-                "weight_decay": 0.0
+                "lr": 0.0007748901378894814,
+                "weight_decay": 0.03728570952247555
             },
             "model": {
                 "arch_type": "tabm-mini",
                 "k": 32,
+                "share_training_batches": false,
                 "backbone": {
                     "type": "MLP",
-                    "n_blocks": 3,
+                    "n_blocks": 4,
                     "d_block": 544,
                     "dropout": 0.0
                 },
                 "num_embeddings": {
-                    "type": "PiecewiseLinearEmbeddings",
-                    "d_embedding": 20
+                    "type": "PiecewiseLinearEmbeddingsV2",
+                    "d_embedding": 8
                 }
             },
             "bins": {
-                "n_bins": 3
+                "n_bins": 2
             }
         },
-        "n_parameters": 796864,
+        "n_parameters": 981664,
         "prediction_type": "labels",
         "epoch_size": 57,
-        "best_step": 2508,
+        "best_step": 4047,
         "metrics": {
             "train": {
-                "rmse": 11179.430039138846,
-                "mae": 7436.58837890625,
-                "r2": 0.9539759642196316,
-                "score": -11179.430039138846
+                "rmse": 14131.583350778497,
+                "mae": 9005.5439453125,
+                "r2": 0.9264594303350668,
+                "score": -14131.583350778497
             },
             "val": {
-                "rmse": 27344.248097177584,
-                "mae": 13911.5986328125,
-                "r2": 0.749089697286915,
-                "score": -27344.248097177584
+                "rmse": 27042.769088981993,
+                "mae": 13827.9140625,
+                "r2": 0.7545919124942146,
+                "score": -27042.769088981993
             },
             "test": {
-                "rmse": 29739.331532500863,
-                "mae": 14179.1123046875,
-                "r2": 0.69364127559019,
-                "score": -29739.331532500863
+                "rmse": 29896.58977207936,
+                "mae": 14226.3896484375,
+                "r2": 0.6903927456405601,
+                "score": -29896.58977207936
             }
         },
-        "time": "0:00:22.631991",
+        "time": "0:00:16.973241",
         "chunk_size": null,
         "eval_batch_size": 32768,
-        "trial_id": 58,
-        "tuning_time": "0:27:00.735561"
+        "trial_id": 53,
+        "tuning_time": "0:12:58.058900"
     },
-    "time": "0:40:42.222320",
+    "time": "0:25:16.237682",
     "n_completed_trials": 100
 }

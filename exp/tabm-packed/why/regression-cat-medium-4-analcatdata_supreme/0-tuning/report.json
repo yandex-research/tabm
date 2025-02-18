@@ -1,0 +1,137 @@
+{
+    "function": "bin.tune.main",
+    "gpus": [
+        "NVIDIA A100-SXM4-80GB"
+    ],
+    "config": {
+        "seed": 0,
+        "function": "bin.model.main",
+        "n_trials": 100,
+        "sampler": {
+            "n_startup_trials": 20
+        },
+        "space": {
+            "seed": 0,
+            "batch_size": 64,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-4-analcatdata_supreme",
+                "num_policy": "noisy-quantile"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": [
+                    "_tune_",
+                    "loguniform",
+                    3e-05,
+                    0.003
+                ],
+                "weight_decay": [
+                    "_tune_",
+                    "?loguniform",
+                    0.0,
+                    0.0001,
+                    0.1
+                ]
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": [
+                        "_tune_",
+                        "int",
+                        1,
+                        5
+                    ],
+                    "d_block": [
+                        "_tune_",
+                        "int",
+                        64,
+                        1024,
+                        16
+                    ],
+                    "dropout": [
+                        "_tune_",
+                        "?uniform",
+                        0.0,
+                        0.0,
+                        0.5
+                    ]
+                }
+            }
+        }
+    },
+    "best": {
+        "function": "bin.model.main",
+        "gpus": [
+            "NVIDIA A100-SXM4-80GB"
+        ],
+        "config": {
+            "seed": 0,
+            "batch_size": 64,
+            "patience": 16,
+            "n_epochs": -1,
+            "gradient_clipping_norm": 1.0,
+            "amp": true,
+            "data": {
+                "cache": true,
+                "path": "data/regression-cat-medium-4-analcatdata_supreme",
+                "num_policy": "noisy-quantile"
+            },
+            "optimizer": {
+                "type": "AdamW",
+                "lr": 3.8124718324074216e-05,
+                "weight_decay": 0.0
+            },
+            "model": {
+                "arch_type": "tabm-packed",
+                "k": 32,
+                "share_training_batches": false,
+                "backbone": {
+                    "type": "MLP",
+                    "n_blocks": 5,
+                    "d_block": 176,
+                    "dropout": 0.0
+                }
+            }
+        },
+        "n_parameters": 4066336,
+        "prediction_type": "labels",
+        "epoch_size": 45,
+        "best_step": 2745,
+        "metrics": {
+            "train": {
+                "rmse": 0.07341290604899485,
+                "mae": 0.018919548019766808,
+                "r2": 0.9813671832311635,
+                "score": -0.07341290604899485
+            },
+            "val": {
+                "rmse": 0.06090056074636256,
+                "mae": 0.016712596639990807,
+                "r2": 0.990378117459966,
+                "score": -0.06090056074636256
+            },
+            "test": {
+                "rmse": 0.08101023178762934,
+                "mae": 0.019258810207247734,
+                "r2": 0.978672084302897,
+                "score": -0.08101023178762934
+            }
+        },
+        "time": "0:00:11.698810",
+        "chunk_size": null,
+        "eval_batch_size": 32768,
+        "trial_id": 89,
+        "tuning_time": "0:19:22.839983"
+    },
+    "time": "0:21:40.677351",
+    "n_completed_trials": 100
+}
