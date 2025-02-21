@@ -447,23 +447,22 @@ class Model(nn.Module):
             # Plain feed-forward network without any kind of ensembling.
             'plain',
             #
-            # TabM-packed
-            'tabm-packed',
+            # TabM
+            'tabm',
             #
             # TabM-mini
             'tabm-mini',
             #
-            # TabM-mini. The first adapter is initialized from the normal distribution.
-            # This is used in Section 5.1 of the paper.
-            'tabm-mini-normal',
-            #
-            # TabM
-            'tabm',
+            # TabM-packed
+            'tabm-packed',
             #
             # TabM. The first adapter is initialized from the normal distribution.
-            # This variation is not used in the paper, but there is a preliminary
-            # evidence that may be a better default strategy.
+            # This variant was not used in the paper, but it may be useful in practice.
             'tabm-normal',
+            #
+            # TabM-mini. The adapter is initialized from the normal distribution.
+            # This variant was not used in the paper.
+            'tabm-mini-normal',
         ],
         k: None | int = None,
         share_training_batches: bool = True,
@@ -536,28 +535,7 @@ class Model(nn.Module):
                 else 'normal'
             )
 
-            if arch_type == 'tabm-packed':
-                # Packed ensemble.
-                # In terms of the Packed Ensembles paper by Laurent et al.,
-                # TabM-packed is PackedEnsemble(alpha=k, M=k, gamma=1).
-                assert first_adapter_init is None
-                make_efficient_ensemble(self.backbone, NLinear, n=k)
-
-            elif arch_type in ('tabm-mini', 'tabm-mini-normal'):
-                # MiniEnsemble
-                assert first_adapter_init is not None
-                self.minimal_ensemble_adapter = ScaleEnsemble(
-                    k,
-                    d_flat,
-                    init='random-signs' if num_embeddings is None else 'normal',
-                )
-                _init_first_adapter(
-                    self.minimal_ensemble_adapter.weight,  # type: ignore[code]
-                    first_adapter_init,
-                    first_adapter_sections,
-                )
-
-            elif arch_type in ('tabm', 'tabm-normal'):
+            if arch_type in ('tabm', 'tabm-normal'):
                 # Like BatchEnsemble, but all multiplicative adapters,
                 # except for the very first one, are initialized with ones.
                 assert first_adapter_init is not None
@@ -575,6 +553,27 @@ class Model(nn.Module):
                     first_adapter_init,
                     first_adapter_sections,
                 )
+
+            elif arch_type in ('tabm-mini', 'tabm-mini-normal'):
+                # MiniEnsemble
+                assert first_adapter_init is not None
+                self.minimal_ensemble_adapter = ScaleEnsemble(
+                    k,
+                    d_flat,
+                    init='random-signs' if num_embeddings is None else 'normal',
+                )
+                _init_first_adapter(
+                    self.minimal_ensemble_adapter.weight,  # type: ignore[code]
+                    first_adapter_init,
+                    first_adapter_sections,
+                )
+
+            elif arch_type == 'tabm-packed':
+                # Packed ensemble.
+                # In terms of the Packed Ensembles paper by Laurent et al.,
+                # TabM-packed is PackedEnsemble(alpha=k, M=k, gamma=1).
+                assert first_adapter_init is None
+                make_efficient_ensemble(self.backbone, NLinear, n=k)
 
             else:
                 raise ValueError(f'Unknown arch_type: {arch_type}')
