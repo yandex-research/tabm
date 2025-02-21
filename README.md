@@ -82,10 +82,11 @@ The following models are available in this repository.
 | $\mathrm{MLP^\dagger}$          | MLP with the piecewise-linear embeddings                 |
 | $\mathrm{MLP^\ddagger}$         | MLP with the periodic embeddings (also known as MLP-PLR) |
 | $\mathrm{MLP^{\ddagger(lite)}}$ | MLP with the lite periodic embeddings                    |
-| $\mathrm{TabM_{mini}}$          | TabM-mini                                                |
 | $\mathrm{TabM}$                 | TabM                                                     |
-| $\mathrm{TabM_{mini}^\dagger}$  | TabM-mini with the piecewise-linear embeddings           |
+| $\mathrm{TabM_{mini}}$          | TabM-mini                                                |
+| $\mathrm{TabM_{packed}}$        | TabM-packed                                              |
 | $\mathrm{TabM^\dagger}$         | TabM with the piecewise-linear embeddings                |
+| $\mathrm{TabM_{mini}^\dagger}$  | TabM-mini with the piecewise-linear embeddings           |
 
 ## Hyperparameters
 
@@ -193,7 +194,6 @@ for TabM with the AdamW optimizer:
 | Depth          | 3               |
 | Width          | 512             |
 | Dropout        | 0.1             |
-| Bins           | N/A             |
 | Learning rate  | 0.002           |
 | Weight decay   | 0.0003          |
 
@@ -509,16 +509,21 @@ and from the `bin/model.py` script, where `Model` is used.
 
 The following table is the mapping between the models and their subdirectories in `exp`.
 
-| Model                           | Experiments                     |
-| :------------------------------ | :------------------------------ |
-| $\mathrm{MLP}$                  | `exp/mlp`                       |
-| $\mathrm{MLP^\dagger}$          | `exp/mlp-piecewiselinear`       |
-| $\mathrm{MLP^\ddagger}$         | `exp/mlp-periodic`              |
-| $\mathrm{MLP^{\ddagger(lite)}}$ | `exp/mlp-periodiclite`          |
-| $\mathrm{TabM_{mini}}$          | `exp/tabm-mini`                 |
-| $\mathrm{TabM}$                 | `exp/tabm`                      |
-| $\mathrm{TabM_{mini}^\dagger}$  | `exp/tabm-mini-piecewiselinear` |
-| $\mathrm{TabM^\dagger}$         | `exp/tabm-piecewiselinear`      |
+| Model                                       | Experiments                                           |
+| :------------------------------------------ | :---------------------------------------------------- |
+| $\mathrm{MLP}$                              | `exp/mlp`                                             |
+| $\mathrm{MLP^\dagger}$                      | `exp/mlp-piecewiselinear`                             |
+| $\mathrm{MLP^\ddagger}$                     | `exp/mlp-periodic`                                    |
+| $\mathrm{MLP^{\ddagger(lite)}}$             | `exp/mlp-periodiclite`                                |
+| $\mathrm{TabM}$                             | `exp/tabm`                                            |
+| $\mathrm{TabM_{mini}}$                      | `exp/tabm-mini`                                       |
+| $\mathrm{TabM_{packed}}$                    | `exp/tabm-packed`                                     |
+| $\mathrm{TabM^\dagger}$                     | `exp/tabm-piecewiselinear`                            |
+| $\mathrm{TabM_{mini}^\dagger}$              | `exp/tabm-mini-piecewiselinear`                       |
+| $\mathrm{TabM^\spadesuit}$                  | `exp/tabm-sharetrainingbatches`                       |
+| $\mathrm{TabM_{mini}^\spadesuit}$           | `exp/tabm-sharetrainingbatches-mini`                  |
+| $\mathrm{TabM^{\dagger \spadesuit}}$        | `exp/tabm-sharetrainingbatches--piecewiselinear`      |
+| $\mathrm{TabM_{mini}^{\dagger \spadesuit}}$ | `exp/tabm-sharetrainingbatches--mini-piecewiselinear` |
 
 ## Common guidelines
 
