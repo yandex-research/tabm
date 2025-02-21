@@ -97,6 +97,9 @@ class Model(nn.Module):
             # Plain feed-forward network without any kind of ensembling.
             'plain',
             #
+            # TabM-packed
+            'tabm-packed',
+            #
             # TabM-mini
             'tabm-mini',
             #
@@ -171,7 +174,9 @@ class Model(nn.Module):
         if arch_type != 'plain':
             assert k is not None
             first_adapter_init = (
-                'normal'
+                None
+                if arch_type == 'tabm-packed'
+                else 'normal'
                 if arch_type in ('tabm-mini-normal', 'tabm-normal')
                 # For other arch_types, the initialization depends
                 # on the presense of num_embeddings.
@@ -180,8 +185,16 @@ class Model(nn.Module):
                 else 'normal'
             )
 
-            if arch_type in ('tabm-mini', 'tabm-mini-normal'):
-                # Minimal ensemble
+            if arch_type == 'tabm-packed':
+                # Packed ensemble.
+                # In terms of the Packed Ensembles paper by Laurent et al.,
+                # TabM-packed is PackedEnsemble(alpha=k, M=k, gamma=1).
+                assert first_adapter_init is None
+                lib.deep.make_efficient_ensemble(self.backbone, lib.deep.NLinear, n=k)
+
+            elif arch_type in ('tabm-mini', 'tabm-mini-normal'):
+                # MiniEnsemble
+                assert first_adapter_init is not None
                 self.minimal_ensemble_adapter = lib.deep.ScaleEnsemble(
                     k,
                     d_flat,
@@ -196,8 +209,10 @@ class Model(nn.Module):
             elif arch_type in ('tabm', 'tabm-normal'):
                 # Like BatchEnsemble, but all multiplicative adapters,
                 # except for the very first one, are initialized with ones.
+                assert first_adapter_init is not None
                 lib.deep.make_efficient_ensemble(
                     self.backbone,
+                    lib.deep.LinearEfficientEnsemble,
                     k=k,
                     ensemble_scaling_in=True,
                     ensemble_scaling_out=True,

@@ -287,8 +287,8 @@ class MLP(nn.Module):
         return x
 
 
-def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
-    """Replace torch.nn.Linear modules with LinearEfficientEnsemble.
+def make_efficient_ensemble(module: nn.Module, EnsembleLayer, **kwargs) -> None:
+    """Replace linear layers with efficient ensembles of linear layers.
 
     NOTE
     In the paper, there are no experiments with networks with normalization layers.
@@ -300,7 +300,7 @@ def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
         if isinstance(submodule, nn.Linear):
             module.add_module(
                 name,
-                LinearEfficientEnsemble(
+                EnsembleLayer(
                     in_features=submodule.in_features,
                     out_features=submodule.out_features,
                     bias=submodule.bias is not None,
@@ -308,7 +308,7 @@ def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
                 ),
             )
         else:
-            make_efficient_ensemble(submodule, **kwargs)
+            make_efficient_ensemble(submodule, EnsembleLayer, **kwargs)
 
 
 def _get_first_ensemble_layer(backbone: MLP) -> LinearEfficientEnsemble:
@@ -447,6 +447,9 @@ class Model(nn.Module):
             # Plain feed-forward network without any kind of ensembling.
             'plain',
             #
+            # TabM-packed
+            'tabm-packed',
+            #
             # TabM-mini
             'tabm-mini',
             #
@@ -522,7 +525,9 @@ class Model(nn.Module):
         if arch_type != 'plain':
             assert k is not None
             first_adapter_init = (
-                'normal'
+                None
+                if arch_type == 'tabm-packed'
+                else 'normal'
                 if arch_type in ('tabm-mini-normal', 'tabm-normal')
                 # For other arch_types, the initialization depends
                 # on the presense of num_embeddings.
@@ -531,8 +536,16 @@ class Model(nn.Module):
                 else 'normal'
             )
 
-            if arch_type in ('tabm-mini', 'tabm-mini-normal'):
-                # Minimal ensemble
+            if arch_type == 'tabm-packed':
+                # Packed ensemble.
+                # In terms of the Packed Ensembles paper by Laurent et al.,
+                # TabM-packed is PackedEnsemble(alpha=k, M=k, gamma=1).
+                assert first_adapter_init is None
+                make_efficient_ensemble(self.backbone, NLinear, n=k)
+
+            elif arch_type in ('tabm-mini', 'tabm-mini-normal'):
+                # MiniEnsemble
+                assert first_adapter_init is not None
                 self.minimal_ensemble_adapter = ScaleEnsemble(
                     k,
                     d_flat,
@@ -547,8 +560,10 @@ class Model(nn.Module):
             elif arch_type in ('tabm', 'tabm-normal'):
                 # Like BatchEnsemble, but all multiplicative adapters,
                 # except for the very first one, are initialized with ones.
+                assert first_adapter_init is not None
                 make_efficient_ensemble(
                     self.backbone,
+                    LinearEfficientEnsemble,
                     k=k,
                     ensemble_scaling_in=True,
                     ensemble_scaling_out=True,

@@ -278,8 +278,8 @@ class LinearEfficientEnsemble(nn.Module):
         return x
 
 
-def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
-    """Replace torch.nn.Linear modules with LinearEfficientEnsemble.
+def make_efficient_ensemble(module: nn.Module, EnsembleLayer, **kwargs) -> None:
+    """Replace linear layers with efficient ensembles of linear layers.
 
     NOTE
     In the paper, there are no experiments with networks with normalization layers.
@@ -291,7 +291,7 @@ def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
         if isinstance(submodule, nn.Linear):
             module.add_module(
                 name,
-                LinearEfficientEnsemble(
+                EnsembleLayer(
                     in_features=submodule.in_features,
                     out_features=submodule.out_features,
                     bias=submodule.bias is not None,
@@ -299,7 +299,7 @@ def make_efficient_ensemble(module: nn.Module, **kwargs) -> None:
                 ),
             )
         else:
-            make_efficient_ensemble(submodule, **kwargs)
+            make_efficient_ensemble(submodule, EnsembleLayer, **kwargs)
 
 
 class MLP(nn.Module):
