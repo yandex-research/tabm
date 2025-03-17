@@ -423,7 +423,7 @@ def main(
         # the largest possible evaluation batch size is noticeably smaller.
         2048 if config.get('compile', False) else 32768,
     )
-    chunk_size = None
+    chunk_size = None  # Currently, not used.
     share_training_batches = config['model'].get(
         'share_training_batches', DEFAULT_SHARE_TRAINING_BATCHES
     )
@@ -595,13 +595,12 @@ def main(
             ]
         )
         for batch_idx in tqdm(batches, desc=f'Epoch {step // epoch_size} Step {step}'):
-            loss, new_chunk_size = lib.deep.zero_grad_forward_backward(
-                optimizer,
-                lambda idx: loss_fn(apply_model('train', idx), Y_train[idx]),
-                batch_idx,
-                chunk_size or batch_size,
-                grad_scaler,
-            )
+            optimizer.zero_grad()
+            loss = loss_fn(apply_model('train', batch_idx), Y_train[batch_idx])
+            if grad_scaler is None:
+                loss.backward()
+            else:
+                grad_scaler.scale(loss).backward()
 
             if parameter_statistics and (
                 step % epoch_size == 0  # The first batch of the epoch.
@@ -625,9 +624,6 @@ def main(
 
             step += 1
             epoch_losses.append(loss.detach())
-            if new_chunk_size and new_chunk_size < (chunk_size or batch_size):
-                chunk_size = new_chunk_size
-                logger.warning(f'chunk_size = {chunk_size}')
 
         epoch_losses = torch.stack(epoch_losses).tolist()
         mean_loss = statistics.mean(epoch_losses)

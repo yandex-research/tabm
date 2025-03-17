@@ -1,8 +1,6 @@
 import itertools
-from collections.abc import Callable
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
-import delu
 import rtdl_num_embeddings
 import rtdl_revisiting_models
 import torch
@@ -10,8 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import Parameter
-
-from .util import is_oom_exception
 
 
 # ======================================================================================
@@ -442,61 +438,3 @@ def make_parameter_groups(
 def make_optimizer(type: str, **kwargs) -> torch.optim.Optimizer:
     Optimizer = getattr(torch.optim, type)
     return Optimizer(**kwargs)
-
-
-# ======================================================================================
-# Training
-# ======================================================================================
-def zero_grad_forward_backward(
-    optimizer: torch.optim.Optimizer,
-    step_fn: Callable[[Tensor], Tensor],  # step_fn: batch_idx -> loss
-    batch_idx: Tensor,
-    chunk_size: int,
-    grad_scaler: None | torch.cuda.amp.GradScaler = None,  # type: ignore[code]
-) -> tuple[Tensor, int]:
-    """
-    This is a standard training step. Additionally, it supports:
-
-    - Training by chunks if the whole batch does not fit into GPU.
-    - Gradient scaling for training in FP16.
-    """
-    backward = (
-        Tensor.backward
-        if grad_scaler is None
-        else lambda x: grad_scaler.scale(x).backward()  # type: ignore[code]
-    )
-    batch_size = len(batch_idx)
-    loss = None
-    while chunk_size != 0:
-        optimizer.zero_grad()
-
-        try:
-            if batch_size <= chunk_size:
-                # The simple forward-backward.
-                loss = step_fn(batch_idx)
-                backward(loss)
-            else:
-                # Forward-backward by chunks.
-                # Mathematically, this is equivalent to the simple forward-backward.
-                # Technically, this implementations uses less memory.
-                loss = None
-                for chunk_idx in batch_idx.split(chunk_size):
-                    chunk_loss = step_fn(chunk_idx)
-                    chunk_loss = chunk_loss * (len(chunk_idx) / batch_size)
-                    backward(chunk_loss)
-                    if loss is None:
-                        loss = chunk_loss.detach()
-                    else:
-                        loss += chunk_loss.detach()
-        except RuntimeError as err:
-            if not is_oom_exception(err):
-                raise
-            delu.cuda.free_memory()
-            chunk_size //= 2
-
-        else:
-            break
-
-    if not chunk_size:
-        raise RuntimeError('Not enough memory even for chunk_size=1')
-    return cast(Tensor, loss), chunk_size
