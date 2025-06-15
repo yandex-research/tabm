@@ -400,7 +400,7 @@ mamba activate tabm
 With Conda:
 
 ```
-conda create -f environment.yaml -n tabm
+conda env create -f environment.yaml -n tabm
 conda activate tabm
 ```
 
