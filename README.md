@@ -1,671 +1,756 @@
-# TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling (ICLR 2025)<!-- omit in toc -->
+# TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling" (ICLR 2025)<!-- omit in toc -->
 
 :scroll: [arXiv](https://arxiv.org/abs/2410.24210)
-&nbsp; :computer: [Usage](#using-tabm-in-practice)
 &nbsp; :books: [Other tabular DL projects](https://github.com/yandex-research/rtdl)
 
-*TL;DR: TabM is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs.*
+This is the official repository of the paper "TabM: Advancing Tabular Deep Learning With
+Parameter-Efficient Ensembling".
+It consists of two parts:
+- [**Python package**](#python-package) described in this document.
+- [**Paper-related content**](./paper/README.md) (code, metrics, hyperparameters, etc.) described in `paper/README.md`.
 
-> [!TIP]
-> For a quick overview of the paper, see **the abstract, Figure 1 and Page 7** in the [PDF](https://arxiv.org/pdf/2410.24210).
-
-# Using TabM in practice
-
-To use TabM outside of this repository, you only need the following:
-
-- [`tabm_reference.py`](./tabm_reference.py): the minimal single-file implementation.
-- [`example.ipynb`](./example.ipynb): the end-to-end example of training TabM.
-- [The section about hyperparameters](#hyperparameters).
-
-To use `tabm_reference.py`, install the following dependencies:
-
-```
-torch>=2.0,<3
-rtdl_num_embeddings>=0.0.11,<0.1
-```
-
-Then, either clone this repository and add its path to `PYTHONPATH`,
-or simply copy `tabm_reference.py`. After that, the following will work:
-
-```python
-from tabm_reference import Model
-```
-
----
-
-Table of contents
-- [Using TabM in practice](#using-tabm-in-practice)
-- [Overview](#overview)
-  - [Models](#models)
-  - [Hyperparameters](#hyperparameters)
-  - [Metrics](#metrics)
-- [Set up the environment](#set-up-the-environment)
-  - [Software](#software)
-  - [Data](#data)
-  - [Quick test](#quick-test)
-  - [Editor settings](#editor-settings)
-- [Running the code](#running-the-code)
-  - [Code overview](#code-overview)
-  - [Common guidelines](#common-guidelines)
-  - [Training](#training)
-  - [Hyperparameter tuning](#hyperparameter-tuning)
-  - [Evaluation](#evaluation)
-  - [Ensembling](#ensembling)
-  - [Automating all of the above](#automating-all-of-the-above)
-- [Adding new datasets](#adding-new-datasets)
-- [How to cite](#how-to-cite)
-
-
-
----
-
-# Overview
-
-The repository provides:
-- The official implementation of the TabM and MLP models.
-- The code for training and hyperparameter tuning used in the paper.
-- Hyperparameter tuning spaces, tuned hyperparameters and metrics of the models on all 40+ datasets
-  used in the paper.
-
-## Models
-
-The following models are available in this repository.
-
-> [!TIP]
-> Among the TabM models, the following variations are recommended as a starting point:
-> - $\mathrm{TabM}$ as the basic version.
-> - $\mathrm{TabM_{mini}^\dagger}$ as the advanced version.
-
-| Name                            | Comment                                                  |
-| :------------------------------ | :------------------------------------------------------- |
-| $\mathrm{MLP}$                  | The plain multilayer perceptron (MLP)                    |
-| $\mathrm{MLP^\dagger}$          | MLP with the piecewise-linear embeddings                 |
-| $\mathrm{MLP^\ddagger}$         | MLP with the periodic embeddings (also known as MLP-PLR) |
-| $\mathrm{MLP^{\ddagger(lite)}}$ | MLP with the lite periodic embeddings                    |
-| $\mathrm{TabM}$                 | TabM                                                     |
-| $\mathrm{TabM_{mini}}$          | TabM-mini                                                |
-| $\mathrm{TabM_{packed}}$        | TabM-packed                                              |
-| $\mathrm{TabM^\dagger}$         | TabM with the piecewise-linear embeddings                |
-| $\mathrm{TabM_{mini}^\dagger}$  | TabM-mini with the piecewise-linear embeddings           |
-
-## Hyperparameters
-
-This section covers default hyperparameters and hyperparameter tuning.
-
-**Default hyperparameters**
-
-While there are no "official" default hyperparameters, the available tuned hyperparameters
-on 40+ dataset allow obtaining a reasonable configuration for the first run.
+<br>
 
 <details>
-<summary>Show how</summary>
+<summary>TabM on <b>Kaggle</b> (as of June 2025)</summary>
 
-```python
-import json
-from pathlib import Path
-
-import pandas as pd
-
-model = 'tabm'  # Or any other model from the exp/ directory.
-
-# Load all training runs.
-df = pd.json_normalize([
-    json.loads(x.read_text())
-    for x in Path('exp').glob(f'{model}/**/0-evaluation/*/report.json')
-])
-print(df.shape)  # (1290, 181)
-df.head()
-
-def get_dataset_name(dataset_path: str) -> str:
-    """
-    >>> get_dataset_name('data/california')
-    'california'
-    >>> get_dataset_name('data/regression-num-large-0-year')
-    'year'
-    """
-    name = dataset_path.removeprefix('data/')
-    return (
-        name.split('-', 4)[-1]  # The "why" benchmark.
-        if name.startswith(('classif-', 'regression-'))
-        else name
-    )
-
-
-df['Dataset'] = df['config.data.path'].map(get_dataset_name)
-
-# The hyperparameters.
-hyperparameters = [
-    'config.model.k',
-    'config.model.backbone.n_blocks',
-    'config.model.backbone.d_block',
-    'config.model.backbone.dropout',
-    'config.optimizer.lr',
-    'config.optimizer.weight_decay',
-]
-
-# When summarizing hyperparameters (but not metrics),
-# it is enough to keep only one seed per dataset.
-dfh = df.loc[df['config.seed'] == 0, ['Dataset', *hyperparameters]]
-
-# Add additional "hyperparameters".
-dfh['has_dropout'] = (dfh['config.model.backbone.dropout'] > 0).astype(float)
-dfh['has_weight_decay'] = (dfh['config.optimizer.weight_decay'] > 0).astype(float)
-
-# Some datasets have multiple splits, so they must be aggregated first.
-dfh = dfh.groupby('Dataset').mean()
-
-# Finally, compute the statistics.
-# NOTE: it is important to take all statistics into account, especially the quantiles,
-# not only the mean value, because the latter is not robust to outliers.
-dfh.describe()
-```
-
-**Additional notes**
-
-First, the above approach is not expected to result in a universally powerful configuration.
-Generally, the more robust to hyperparameters the model is, the higher is the chance
-to compose a configuration that will be a reasonable starting point on a larger number of datasets.
-
-Second, when computing the above statistics,
-a seemingly natural idea is to use only those datasets that are more similar to the task at hand.
-Also, not all used datasets are equally representative for the real world usage.
-However, deciding if a given dataset is relevant for the target task is not trivial.
-For example, generally, filtering datasets by size may not be a reliable criteria.
-
-One idea is to split datasets into different groups,
-compute statistics separately for each group, and thus get better intuition on hyperparameters.
-Examples of groups:
-- By split type: "datasets with random splits" and "datasets with domain-aware splits"
-  (this separation is used in the paper).
-- By GBDT/DL-friendliness: "datasets where GBDT performs well" and "datasets where DL performs well".
-- etc.
+- TabM was used in [the winning solution](https://www.kaggle.com/competitions/um-game-playing-strength-of-mcts-variants/discussion/549801) in the competition by UM.
+- TabM was used in [the winning solution](https://www.kaggle.com/competitions/equity-post-HCT-survival-predictions/discussion/566550), as well as in the top-3, top-4, top-5 and many other solutions in the competition by CIBMTR. Later, it turned out that it was possible to achieve the [25-th place](https://www.kaggle.com/competitions/equity-post-HCT-survival-predictions/discussion/567863) out of 3300+ with only TabM, without ensembling it with other models.
 
 </details>
 
-Based on the above approach, the following configurations can be suggested as a starting point
-for TabM with the AdamW optimizer:
+<details>
+<summary>TabM on <b>TabReD</b> (a challenging benchmark)</summary>
+
+[TabReD](https://arxiv.org/abs/2406.19380) is a benchmark based on **real-world industrial datasets** with **time-related distribution drifts** and **hundreds of features**, which makes it more challenging than traditional benchmarks. The figure below shows that TabM achieves higher performance on TabReD (plus one more real-world dataset) compared to prior tabular DL methods.
+
+<img src="images/tabred-and-microsoft.png" width=35% display=block margin=auto>
+
+*One dot represents a performance score on one dataset. For a given model, a diamond represents the mean value across the datasets.*
+
+</details>
+
+<details>
+<summary>Training and inference efficiency</summary>
+
+TabM is a simple and reasonably efficient model, which makes it suitable for **real-world applications**, including large datasets. The biggest dataset used in the paper contains **13M objects**, and we are aware of a successful training run on **100M+ objects**, though training takes more time in such cases.
+
+The figure below shows that TabM is relatively slower than MLPs and GBDT, but faster than prior tabular DL methods. Note that (1) the inference throughput was measured on a single CPU thread and *without any optimizations*, in particular without the TabM-specific acceleration technique described later in this document; (2) the left plot uses the *logarithmic* scale.
+
+<img src="images/efficiency.png" display=block margin=auto>
+
+*One dot represents a measurement on one dataset. For a given model, a diamond represents the mean value across the datasets. In the left plot,* $\mathrm{TabM_{mini}^{\dagger*}}$ *denotes* $\mathrm{TabM_{mini}^{\dagger}}$ *trained with mixed precision and `torch.compile`.*
+
+</details>
+
+# TL;DR<!-- omit in toc -->
+
+<img src="images/tabm.png" width=65% display=block margin=auto>
+
+**TabM** (**Tab**ular DL model that makes **M**ultiple predictions) is a simple and powerful tabular DL architecture that efficiently imitates an ensemble of MLPs. The two main differences of TabM compared to a regular ensemble of MLPs:
+- **Parallel training** of the MLPs. This allows monitoring the performance of the ensemble during the training and stopping the training when it is optimal for the ensemble, not for individual MLPs.
+- **Weight sharing** between the MLPs. In fact, the whole TabM fits in just *one* MLP-like model. Not only this significantly improves the runtime and memory efficiency, but also turns out to be an effective regularization leading to better task performance.
+
+# Reproducing experiments and browsing results<!-- omit in toc -->
+
+> [!IMPORTANT]
+> To use TabM in practice and for future work, use the `tabm` package described below.
+
+The [paper-related content](./paper/README.md) (code, metrics, hyperparameters, etc.) is located in the `paper/` directory and is described in `paper/README.md`.
+
+# Python package<!-- omit in toc -->
+
+`tabm` is a PyTorch-based Python package providing the TabM model, as well as layers and tools for building custom TabM-like architectures (i.e. efficient ensembles of MLP-like models).
+
+- [**Installation**](#installation)
+- [**Basic usage**](#basic-usage)
+    - [Creating TabM](#creating-tabm)
+    - [Creating TabM with feature embeddings](#creating-tabm-with-feature-embeddings)
+    - [Using TabM with custom inputs and input modules](#using-tabm-with-custom-inputs-and-input-modules)
+    - [Training](#training)
+    - [Inference](#inference)
+- [**Examples**](#examples)
+- [Advanced usage](#advanced-usage)
+    - [Intuition](#intuition)
+    - [`EnsembleView`](#ensembleview)
+    - [MLP ensembles](#mlp-ensembles)
+    - [Important implementation details](#important-implementation-details)
+    - [Example: Simple ensemble without weight sharing](#example-simple-ensemble-without-weight-sharing)
+    - [Example: MiniEnsemble](#example-miniensemble)
+    - [Example: BatchEnsemble](#example-batchensemble)
+    - [Example: a custom architecture](#example-a-custom-architecture)
+    - [Turning an existing model to an efficient ensemble](#turning-an-existing-model-to-an-efficient-ensemble)
+- [Hyperparameters](#hyperparameters)
+    - [Default model](#default-model)
+    - [Default optimizer](#default-optimizer)
+    - [`arch_type`](#arch_type)
+    - [`k`](#k)
+    - [`num_embeddings`](#num_embeddings)
+    - [Initialization](#initialization)
+    - [Hyperparameter tuning](#hyperparameter-tuning)
+- [Practical notes](#practical-notes)
+    - [Inference efficiency](#inference-efficiency)
+- [API](#api)
+
+# **Installation**
+
+```
+pip install tabm
+```
+
+# **Basic usage**
+
+This section shows how to create a model in typical use cases, and gives high-level comments on
+training and inference.
+
+## Creating TabM
+
+The below example showcases the basic version of TabM without feature embeddings.
+For better performance, `num_embeddings` should usually be passed as explained in the next section.
 
 > [!NOTE]
-> The suggested hyperparameters may change in the future.
+> `TabM.make(...)` used below adds default hyperparameters based on the provided arguments.
 
-| Hyperparameter | $\mathrm{TabM}$ |
-| :------------- | :-------------- |
-| `k`            | 32              |
-| Depth          | 3               |
-| Width          | 512             |
-| Dropout        | 0.1             |
-| Learning rate  | 0.002           |
-| Weight decay   | 0.0003          |
+<!-- test main -->
+```python
+import torch
+from tabm import TabM
 
-When using embeddings for numerical features as in $\mathrm{TabM_{mini}^\dagger}$, the default
-depth can be reduced to $2$.
+# >>> Common setup for all subsequent sections.
+d_out = 1  # For example, one regression task.
+batch_size = 256
 
-**Hyperparameter tuning**
+# The dataset has 24 numerical (continuous) features.
+n_num_features = 24
 
-> [!NOTE]
-> This section only provides general advice on hyperparameter tuning.
-> Running the hyperparameter tuning code used in the paper is discussed later in this document, and requires setting up the environment.
+# The dataset has 2 categorical features.
+# The first categorical feature has 3 unique categories.
+# The second categorical feature has 7 unique categories.
+cat_cardinalities = [3, 7]
+# <<<
 
-If achieving the highest possible performance is not critical,
-then 30-50 iterations of the [TPE sampler from Optuna](https://optuna.readthedocs.io/en/stable/reference/samplers/generated/optuna.samplers.TPESampler.html) should result in a somewhat reasonable configuration.
-It the paper:
-- For MLP, 100 iterations were used.
-- For TabM, 100 iterations were used on smaller datasets, and 50 iterations on larger datasets.
+model = TabM.make(
+    n_num_features=n_num_features,
+    cat_cardinalities=cat_cardinalities,  # One-hot encoding will be used.
+    d_out=d_out,
+)
+x_num = torch.randn(batch_size, n_num_features)
+x_cat = torch.column_stack([
+    # The i-th categorical features must take values in range(0, cat_cardinalities[i]).
+    torch.randint(0, c, (batch_size,)) for c in cat_cardinalities
+])
+y_pred = model(x_num, x_cat)
 
-## Metrics
+# TabM represents an ensemble of k models, hence k predictions per object.
+assert y_pred.shape == (batch_size, model.k, d_out)
+```
 
-The published results allow easily summarizing the metrics of the models on all datasets.
+## Creating TabM with feature embeddings
 
-<details>
-<summary>Show how</summary>
+On typical tabular tasks, the best performance is usually achieved by passing feature embedding
+modules as `num_embeddings` (in the paper, TabM with embeddings is denoted as $\mathrm{TabM^\dagger}$). `TabM` supports several feature embedding modules from the
+[`rtdl_num_embeddings`](https://github.com/yandex-research/rtdl-num-embeddings/blob/main/package/README.md)
+package. The below example showcases the simplest embedding module `LinearReLUEmbeddings`.
+
+> [!TIP]
+> The best performance is usually achieved with more advanced embeddings, such as
+> `PiecewiseLinearEmbeddings` and `PeriodicEmbeddings`. Their usage is covered in the end-to-end usage [example](#examples).
+
+<!-- test main _ -->
+```python
+from rtdl_num_embeddings import LinearReLUEmbeddings
+
+model = TabM.make(
+    n_num_features=n_num_features,
+    num_embeddings=LinearReLUEmbeddings(n_num_features),
+    d_out=d_out
+)
+x_num = torch.randn(batch_size, n_num_features)
+y_pred = model(x_num)
+
+assert y_pred.shape == (batch_size, model.k, d_out)
+```
+
+## Using TabM with custom inputs and input modules
+
+> [!TIP]
+> The implementation of `tabm.TabM` is a good example of defining inputs and input modules in
+> TabM-based models.
+
+Assume that you want to change what input TabM takes or how TabM handles the input, but you still
+want to use TabM as the backbone. Then, a typical usage looks as follows:
 
 ```python
-import json
-from pathlib import Path
+from tabm import EnsembleView, make_tabm_backbone, LinearEnsemble
 
-import pandas as pd
 
-def get_dataset_name(dataset_path: str) -> str:
-    """
-    >>> get_dataset_name('data/california')
-    'california'
-    >>> get_dataset_name('data/regression-num-large-0-year')
-    'year'
-    """
-    name = dataset_path.removeprefix('data/')
-    return (
-        name.split('-', 4)[-1]  # The "why" benchmark.
-        if name.startswith(('classif-', 'regression-'))
-        else name
-    )
+class Model(nn.Module):
+    def __init__(self, ...):
+        # >>> Create any custom modules.
+        ...
+        # <<<
 
-model = 'tabm'  # Or any other model from the exp/ directory.
+        # Create the ensemble input module.
+        self.ensemble_view = EnsembleView(...)
+        # Create the backbone.
+        self.backbone = make_tabm_backbone(...)
+        # Create the prediction head.
+        self.output = LinearEnsemble(...)
 
-# Load all training runs.
-df = pd.json_normalize([
-    json.loads(x.read_text())
-    for x in Path('exp').glob(f'{model}/**/0-evaluation/*/report.json')
-])
-df['Dataset'] = df['config.data.path'].map(get_dataset_name)
+    def forward(self, arg1, arg2, ...):
+        # Transform the input as needed to one tensor.
+        # This step can include feature embeddings
+        # and all other kinds of feature transformations.
+        # `handle_input` is a hypothetical user-defined function.
+        x = handle_input(arg1, arg2, ...)  # -> (B, D) or (B, k, D)
 
-# Aggregate the results over the random seeds.
-print(df.groupby('Dataset')['metrics.test.score'].agg(['mean', 'std']))
+        # The only difference from conventional models is
+        # the call of self.ensemble_view.
+        x = self.ensemble_view(x)  # -> (B, k, D)
+        x = self.backbone(x)
+        x = self.output(x)
+        return x  # -> (B, k, d_out)
 ```
 
-The output exactly matches the metrics reported in the very last section of the paper:
-
-```
-                                             mean         std
-Dataset                                                      
-Ailerons                                -0.000157    0.000002
-Bike_Sharing_Demand                    -42.108096    0.501597
-Brazilian_houses                        -0.044310    0.021299
-KDDCup09_upselling                       0.800227    0.010331
-MagicTelescope                           0.860680    0.005765
-Mercedes_Benz_Greener_Manufacturing     -8.221496    0.894050
-MiamiHousing2016                        -0.148294    0.003001
-MiniBooNE                                0.950001    0.000545
-OnlineNewsPopularity                    -0.858395    0.000325
-SGEMM_GPU_kernel_performance            -0.015809    0.000385
-adult                                    0.858158    0.001100
-analcatdata_supreme                     -0.077736    0.009874
-bank-marketing                           0.790799    0.006795
-black-friday                            -0.687502    0.001464
-california                              -0.450932    0.003154
-churn                                    0.861300    0.002463
-cooking-time                            -0.480330    0.000587
-covtype2                                 0.971188    0.000800
-cpu_act                                 -2.193951    0.052341
-credit                                   0.775121    0.004241
-delivery-eta                            -0.550962    0.001511
-diamond                                 -0.134209    0.001725
-ecom-offers                              0.594809    0.000557
-elevators                               -0.001853    0.000025
-fifa                                    -0.797377    0.014414
-higgs-small                              0.738256    0.002775
-homecredit-default                       0.858349    0.001019
-homesite-insurance                       0.964121    0.000401
-house                               -30002.387181  181.962989
-house_sales                             -0.169186    0.001056
-isolet                                  -1.883108    0.119444
-jannis                                   0.806610    0.001525
-kdd_ipums_la_97-small                    0.884546    0.006317
-maps-routing                            -0.161169    0.000120
-medical_charges                         -0.081265    0.000052
-microsoft                               -0.743353    0.000265
-nyc-taxi-green-dec-2016                 -0.386578    0.000596
-otto                                     0.826756    0.001436
-particulate-matter-ukair-2017           -0.368573    0.000628
-phoneme                                  0.870065    0.016701
-pol                                     -3.359482    0.401706
-road-safety                              0.794583    0.001253
-sberbank-housing                        -0.246943    0.003539
-sulfur                                  -0.019162    0.003538
-superconduct                           -10.337929    0.033769
-visualizing_soil                        -0.124183    0.018830
-weather                                 -1.478620    0.003926
-wine                                     0.796127    0.013558
-wine_quality                            -0.616949    0.012259
-year                                    -8.870127    0.011037
-```
-
-</details>
-
-# Set up the environment
-
-## Software
-
-Clone the repository:
-
-```shell
-git clone https://github.com/yandex-research/tabm
-cd tabm
-```
-
-Install any of the following tools, and follow the remaining instructions.
-
-| Tool                                                                                           | Supported OS | Supported devices |
-| :--------------------------------------------------------------------------------------------- | :----------- | :---------------- |
-| [Pixi](https://pixi.sh/latest/#installation)                                                   | Linux, macOS | CPU, GPU          |
-| [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) | Linux        | GPU               |
-| [Mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)           | Linux        | GPU               |
-| [Conda](https://conda-forge.org/download/)                                                     | Linux        | GPU               |
-
-<details>
-<summary>What is Pixi?</summary>
-
-Pixi is a high-level tool built on top of Conda environments.
-
-*The main benefits:*
-
-- **Pixi allows running the code seamlessly across different operating systems, with and without GPUs**
-  (this projects supports only Linux and macOS).
-- **Pixi guarantees that you and your collaborators will always have exactly the same Conda environment.**
-  If anyone adds/removes/updates a package, the enviroment is updated for all collaborators through the `pixi.lock` file.
-  In particular, you will have exactly the same environment as us, the original authors.
-
-*Technical details:*
-
-- **Pixi is a single binary file that can be downloaded and run as-is.**
-  Thus, Pixi will not affect your current installations of pip, uv, conda, and of any other tools.
-- **Pixi will automatically create and manage Conda environments in the `.pixi` folder right in the root of this repository.** No need for manually creating the environment,
-  installing packages, etc. At any moment, it is totally safe to remove the `.pixi` directory from the root of this repository.
-- **All Pixi commands must be run from the root of the repository.**
-
-For more details, see the official Pixi documentation.
-
-</details>
-
-With Pixi, the environment will be created automatically
-when you do `pixi run` or `pixi shell` for the first time. For example, try:
-
-```shell
-# Running commands in the environment with GPU
-pixi run -e cuda python -c "import torch; print(torch.cuda.is_available())"
-
-# Running commands in the CPU-only environment
-pixi run python --version
-```
-
-Or, if you prefer the Conda style workflow:
-
-```shell
-# Activate the environment with GPU
-pixi shell -e cuda
-
-# Activate the CPU-only environment
-pixi shell
-
-# Running commands (without `pixi run`)
-python --version
-
-# Deactivate the environment
-exit
-```
-
-With Micromamba:
-
-```
-micromamba create -f environment.yaml
-micromamba activate tabm
-```
-
-With Mamba:
-
-```
-mamba create -f environment.yaml
-mamba activate tabm
-```
-
-With Conda:
-
-```
-conda create -f environment.yaml -n tabm
-conda activate tabm
-```
-
-## Data
-
-***License:** we do not impose any new license restrictions in addition to the original licenses of the used dataset. See the paper to learn about the dataset sources.*
-
-The data consists of two parts.
-
-**Part 1.** Go to the root of the repository and run:
-
-```
-mkdir local
-wget https://huggingface.co/datasets/rototoHF/tabm-data/resolve/main/data.tar -O local/tabm-data.tar.gz
-mkdir data
-tar -xvf local/tabm-data.tar.gz -C data
-```
-
-**Part 2.** Create the `local` directory
-and download the [TabReD](https://github.com/yandex-research/tabred) benchmark to `local/tabred`
-(you will need an account on Kaggle).
-Then, run:
-
-```
-python tools/prepare_tabred.py local/tabred data
-```
-
-## Quick test
-
-To check that the environment is configured correctly,
-run the following command and wait for the training to finish.
-Please, note:
-- The first run in a newly created environment can be (very) slow to start.
-- The results of the experiment will not be representative.
-  It is needed only to test the environment.
-
-```shell
-# Pixi with GPU
-pixi run -e cuda python bin/model.py exp/debug/0.toml --force
-
-# Pixi without GPU
-pixi run python bin/model.py exp/debug/0.toml --force
-
-# Without Pixi
-python bin/model.py exp/debug/0.toml --force
-```
-
-The last line of the output log should look like this:
-```
-[<<<] exp/debug/0 | <date & time>
-```
-
-## Editor settings
-
-To make the Python language server more responsive, it is recommended to hide the `exp`
-directory from the language server. For example, in Visual Studio Code, this can be achieved
-by adding the following to the local `.vscode/settings.json` file of this project:
-
-```jsonc
-{
-    // NOTE
-    // If this setting is already configured on the user level,
-    // you may need to duplicate the user-level values here.
-    "python.analysis.exclude": [ "**/exp" ],
-}
-```
-
-# Running the code
-
-This section will be useful if you are planning any of the following:
-
-- Reproducing the results from the paper.
-- Tuning and training the models on custom datasets.
-- Using this repository as a starting point for future work.
-
-## Code overview
-
-| Code              | Comment                                                   |
-| :---------------- | :-------------------------------------------------------- |
-| `bin/model.py`    | **The implementation of TabM** and the training pipeline  |
-| `bin/tune.py`     | Hyperparameter tuning                                     |
-| `bin/evaluate.py` | Evaluating a model under multiple random seeds            |
-| `bin/ensemble.py` | Evaluate an ensemble of models                            |
-| `bin/go.py`       | `bin/tune.py` + `bin/evaluate.py` + `bin/ensemble.py`     |
-| `lib`             | Common utilities used by the scripts in `bin`             |
-| `exp`             | Hyperparameters and metrics of the models on all datasets |
-| `tools`           | Additional technical tools                                |
-
-The `exp` directory is structured as follows:
-
-```
-exp/
-  <model>/
-    <dataset>/       # Or why/<dataset> or tabred/<dataset>
-      0-tuning.toml  # The hyperparameter tuning config
-      0-tuning/      # The result of the hyperparameter tuning
-      0-evaluation/  # The evaluation under multiple random seeds
-```
-
-**Models**
-
-All available models are represented by the `Model` class from `bin/model.py`.
-They differ in the `arch_type`, `k`, `num_embeddings` and `bins` arguments.
-The values for these arguments can be inferred from the TOML configs in the `exp` directory,
-and from the `bin/model.py` script, where `Model` is used.
-
-The following table is the mapping between the models and their subdirectories in `exp`.
-
-| Model                                       | Experiments                                           |
-| :------------------------------------------ | :---------------------------------------------------- |
-| $\mathrm{MLP}$                              | `exp/mlp`                                             |
-| $\mathrm{MLP^\dagger}$                      | `exp/mlp-piecewiselinear`                             |
-| $\mathrm{MLP^\ddagger}$                     | `exp/mlp-periodic`                                    |
-| $\mathrm{MLP^{\ddagger(lite)}}$             | `exp/mlp-periodiclite`                                |
-| $\mathrm{TabM}$                             | `exp/tabm`                                            |
-| $\mathrm{TabM_{mini}}$                      | `exp/tabm-mini`                                       |
-| $\mathrm{TabM_{packed}}$                    | `exp/tabm-packed`                                     |
-| $\mathrm{TabM^\dagger}$                     | `exp/tabm-piecewiselinear`                            |
-| $\mathrm{TabM_{mini}^\dagger}$              | `exp/tabm-mini-piecewiselinear`                       |
-| $\mathrm{TabM^\spadesuit}$                  | `exp/tabm-sharetrainingbatches`                       |
-| $\mathrm{TabM_{mini}^\spadesuit}$           | `exp/tabm-sharetrainingbatches-mini`                  |
-| $\mathrm{TabM^{\dagger \spadesuit}}$        | `exp/tabm-sharetrainingbatches--piecewiselinear`      |
-| $\mathrm{TabM_{mini}^{\dagger \spadesuit}}$ | `exp/tabm-sharetrainingbatches--mini-piecewiselinear` |
-
-## Common guidelines
-
-On your first reading, feel free to skip this section.
-
-<details>
-<summary>Show</summary>
-
-- `bin/model.py` takes one TOML config as the input and produces a directory next to the config as the output.
-  For example, the command `python bin/model.py exp/hello/world.toml` will produce the directory `exp/hello/world`.
-  The `report.json` file in the output directory is the main result of the run:
-  it contains all metrics and hyperparameters.
-- The same applies to `bin/tune.py`.
-- Some scripts support the `--continue` flag to continue the execution of an interrupted run.
-- Some scripts support the `--force` flag to **overwrite the existing result**
-  and run the script from scratch.
-- The layout in the `exp` directory can be arbitrary;
-  the current layout is just our convention.
-
-</details>
+> [!NOTE]
+> Regarding the shape of `x` in the line `x = handle_input(...)`:
+> - TabM can be used as a conventional MLP-like backbone, which corresponds to `x` having the
+>   standard shape `(B, D)` during both training and inference. This approach is recommended by
+>   default due to its simplicity and better efficiency.
+> - There is also an advanced training strategy, where the shape of `x` is `(B, k, D)`
+>   during training and `(B, D)` during inference.
+>
+> The end-to-end usage [example](#examples) covers both approaches.
 
 ## Training
 
-To train a model once, compose a TOML config with hyperparameters and pass it to `bin/model.py`.
-For example, the following command reproduces one training run of TabM on the California Housing dataset:
+**It is crucial to train the `k` predictions of TabM indepedendently without averaging them.**
+In other words, the *mean loss* must be optimized, *not* the loss of the mean prediction. The
+end-to-end usage [example](#examples) provides a complete reference on how to train TabM.
 
-```
-mkdir -p exp/reproduce/train-once
-cp exp/tabm/california/0-evaluation/0.toml exp/reproduce/train-once/
-python bin/model.py exp/reproduce/train-once/0.toml
+## Inference
+
+On inference, to obtain a prediction for a given object, average the `k` predictions. The exact
+averaging strategy depends on the task and loss function. For example, on classification tasks,
+*probabilities* should usually be averaged, not logits. The end-to-end usage [example](#examples) shows how to make predictions with TabM.
+
+# **Examples**
+
+`example.ipynb` provides an end-to-end example of training TabM:
+- [View on GitHub](./example.ipynb)
+- [Open in Colab](https://colab.research.google.com/github/yandex-research/tabm/blob/main/example.ipynb)
+
+# Advanced usage
+
+> [!TIP]
+> Try and tune TabM before building custom models. The simplicity of TabM can be deceptive, while in
+> fact it is a strong baseline despite using the vanilla MLP as the base model.
+
+This part of the package goes beyond the TabM paper and provides building blocks for creating
+custom TabM-like architectures, including:
+- Efficient ensembles of MLPs, linear layers and normalization layers.
+- Other layers useful for efficient ensembles, such as `EnsembleView` and `ElementwiseAffine`.
+- Functions for converting single models to efficient ensembles in-place.
+- And other tools.
+
+Some things are discussed in dedicated sections, and the rest is shown in the examples below.
+
+> [!IMPORTANT]
+> Understanding the implementation details of TabM is important for constructing *correct* and
+> *effective* TabM-like models. Some of them are discussed later in this section. Other important
+> references:
+> - The source code of this package, in particular the `TabM` model and the `make_tabm_backbone`
+>   function.
+> - The TabM paper, in particular the $\mathrm{TabM_{mini}}$ paragraph of Section 3.3 (arXiv v3).
+
+## Intuition
+
+Recall that, in conventional MLP-like models, a typical module represents one layer applied to
+a tensor of the shape `(B, D)`, where `B` is the batch size and `D` is the latent representation
+size. By contrast, a typical module in this package:
+- Represents an ensemble of `k` layers applied in parallel to `k` inputs.
+- Operates on tensors of the shape `(B, k, D)` representing `k` inputs (one per layer).
+
+Examples:
+- `LinearEnsemble` is an ensemble of `k` independent linear layers.
+- `LinearBatchEnsemble` is an ensemble of `k` linear layers sharing most of their weights. Note that
+  weight sharing does not change how the module is applied: it still represents `k` layers operating
+  in parallel over `k` inputs.
+
+## `EnsembleView`
+
+`EnsembleView` is a special lightweight module doing one simple thing:
+- Tensors of the shape `(B, D)` are turned to tensors of the shape `(B, k, D)` storing `k` identical
+  views of the original tensor. This is a cheap copy-free operation.
+- Tensors of the shape `(B, k, D)` are propagated as-is without any changes.
+
+## MLP ensembles
+
+The package provides the following efficient MLP ensembles:
+- `MLPBackboneBatchEnsemble` (used by $\mathrm{TabM}$)
+- `MLPBackboneMiniEnsemble` (used by $\mathrm{TabM_{mini}}$)
+- `MLPBackboneEnsemble` (used by $\mathrm{TabM_{packed}}$)
+
+> [!NOTE]
+> The difference between creating the above ensembles directly or with the `tabm.make_tabm_backbone`
+> function is that certain details in `make_tabm_backbone` are optimized for TabM. Those details
+> may be useful outside of TabM, too, but this is not explored.
+
+Contrary to `TabM`, they accept only one three-dimensional input of the shape `(batch_size, k, d)`.
+Thus, a user is responsible for converting the input to one tensor (e.g. using embeddings, one-hot
+encoding, etc.) storing either `k` views of the same object or `k` full-fledged batches. A basic
+usage example:
+
+<!-- test main -->
+```python
+import tabm
+import torch
+import torch.nn as nn
+
+d_in = 24
+d_out = 1
+k = 32
+model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+    tabm.MLPBackboneBatchEnsemble(
+        d_in=d_in,
+        n_blocks=3,
+        d_block=512,
+        dropout=0.1,
+        k=k,
+        tabm_init=True,
+        scaling_init='normal',
+        start_scaling_init_chunks=None,
+    ),
+    tabm.LinearEnsemble(512, d_out, k=k)
+)
+x = torch.randn(batch_size, d_in)
+y_pred = model(x)
+assert y_pred.shape == (batch_size, k, d_out)
 ```
 
-The output will be located in the `0` directory next to the TOML config.
+## Important implementation details
+
+This section covers implementation details that are important for building custom TabM-like models.
+
+**The order of layers.** The most important guideline is that **the $k$ different object representations
+should be created before the tabular features are mixed with linear layers**. This follows directly
+from the $\mathrm{TabM_{mini}}$ paragraph of Section 3.3 of the paper (arXiv V3).
+
+```python
+d_in = 24
+d = 512
+k = 16
+
+# GOOD: collectively, the first two modules create k
+# different object representations before the first
+# linear layer.
+scaling_init = "normal"  # or "random-signs"
+good_model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+    tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init=scaling_init),
+    nn.Linear(d_in, d),
+    ...
+)
+
+# GOOD: internally, LinearBatchEnsemble starts with a
+# non-shared elementwise scaling, which diversifies
+# the k object representations before the
+# linear transformation.
+scaling_init = "normal"  # or "random-signs"
+                         # or ("normal", "ones")
+                         # or ("random-signs", "ones")
+good_model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+    tabm.LinearBatchEnsemble(d_in, d, k=k, scaling_init=scaling_init),
+    ...
+)
+
+# BAD: the tabular features are mixed before
+# the ensemble starts.
+bad_model = nn.Sequential(
+    nn.Linear(d_in, d),
+    tabm.EnsembleView(k=k),
+    nn.ReLU(),
+    ...
+)
+
+# BAD: the k representations are created before the
+# first linear transformations, but these representations
+# are not different. Mathematically, the below snippet is
+# equivalent to the previous one.
+bad_model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+    nn.Linear(d_in, d),
+    nn.ReLU(),
+    ...
+)
+```
+
+**Weight sharing.** When choosing between `torch.nn.Linear` (fully sharing linear layers between
+ensemble members), `tabm.LinearBatchEnsemble` (sharing most of the weights) and
+`tabm.LinearEnsemble` (no weight sharing), keep in mind that parameter-efficient ensembling
+strategies based on weight sharing (e.g. BatchEnsemble and MiniEnsemble) not only significantly
+improve the efficiency of TabM, but also improve its task performance. Thus, weight sharing seems
+to be an effective regularization. However, it remains underexplored what is the optimal "amount" of
+this regularization and how it depends on a task.
+
+## Example: Simple ensemble without weight sharing
+
+The following code is a reimplementation of `tabm.MLPBackboneEnsemble`:
+
+<!-- test main _ -->
+```python
+k = 32
+d_in = 24
+d = 512
+d_out = 1
+dropout = 0.1
+
+model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+
+    # >>> MLPBackboneEnsemble(n_blocks=2)
+    tabm.LinearEnsemble(d_in, d, k=k),
+    nn.ReLU(),
+    nn.Dropout(dropout),
+
+    tabm.LinearEnsemble(d, d, k=k),
+    nn.ReLU(),
+    nn.Dropout(dropout),
+    # <<<
+
+    tabm.LinearEnsemble(d, d_out, k=k),
+)
+```
+
+## Example: MiniEnsemble
+
+MiniEnsemble is a simple parameter-efficient ensembling strategy:
+1. Create $k$ different representations of an object by passing it through $k$ non-shared randomly
+   initialized affine transformations.
+2. Pass the $k$ representations in parallel through one shared backbone. Any backbone can be used.
+3. Make predictions with non-shared heads.
+
+The code below is a reimplementation of `tabm.MLPBackboneMiniEnsemble`. In fact,
+`backbone` can be any MLP-like model. The only requirement for `backbone` is to support an arbitrary
+number of batch dimensions, since `EnsembleView` adds a new dimension. Alternatively, one can
+reshape the representation before and after the backbone.
+
+<!-- test main _ -->
+```python
+d_in = 24
+d = 512
+d_out = 1
+k = 32
+
+# Any MLP-like backbone can be used.
+backbone = tabm.MLPBackbone(
+    d_in=d_in, n_blocks=2, d_block=d, dropout=0.1
+)
+model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+
+    # >>> MLPBackboneMiniEnsemble
+    tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init='normal'),
+    backbone,
+    # <<<
+
+    tabm.LinearEnsemble(d, d_out, k=k),
+)
+```
+
+## Example: BatchEnsemble
+
+The following code is a reimplementation of `tabm.MLPBackboneBatchEnsemble` with `n_blocks=2`:
+
+<!-- test main _ -->
+```python
+k = 32
+d_in = 24
+d = 512
+dropout = 0.1
+tabm_init = True  # TabM-style initialization
+scaling_init = 'normal'  # or 'random-signs'
+
+model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+
+    # >>> MLPBackboneBatchEnsemble(n_blocks=2)
+    tabm.LinearBatchEnsemble(
+        d_in, d, k=k,
+        scaling_init=(scaling_init, 'ones') if tabm_init else scaling_init,
+    ),
+    nn.ReLU(),
+    nn.Dropout(dropout),
+
+    tabm.LinearBatchEnsemble(
+        d, d, k=k,
+        scaling_init='ones' if tabm_init else scaling_init
+    ),
+    nn.ReLU(),
+    nn.Dropout(dropout),
+    # <<<
+
+    tabm.LinearEnsemble(d, d_out, k=k),
+)
+```
+
+## Example: a custom architecture
+
+A random and most likely **bad** architecture showcasing various layers available in the package:
+
+<!-- test main _ -->
+```python
+d_in = 24
+d = 512
+d_out = 1
+k = 16
+dropout = 0.1
+
+model = nn.Sequential(
+                                         #    (B, d_in) or (B, k, d_in)
+    tabm.EnsembleView(k=k),              # -> (B, k, d_in)
+
+    # Most of the weights are shared
+    tabm.LinearBatchEnsemble(            # -> (B, k, d)
+        d_in, d, k=k, scaling_init=('random-signs', 'ones')
+    ),
+    nn.ReLU(),                           # -> (B, k, d)
+    nn.Dropout(dropout),                 # -> (B, k, d)
+
+    # No weight sharing
+    tabm.BatchNorm1dEnsemble(d, k=k),    # -> (B, k, d)
+
+    # No weight sharing
+    tabm.LinearEnsemble(                 # -> (B, k, d)
+        d, d, k=k
+    ),
+    nn.ReLU(),                           # -> (B, k, d)
+    nn.Dropout(dropout),                 # -> (B, k, d)
+
+    # The weights are fully shared
+    nn.Linear(                           # -> (B, k, d)
+        d, d,
+    ),
+    nn.ReLU(),                           # -> (B, k, d)
+    nn.Dropout(dropout),                 # -> (B, k, d)
+
+    # No weight sharing
+    tabm.ElementwiseAffine(              # -> (B, k, d)
+        (k, d), bias=True, scaling_init='normal'
+    ),
+
+    # The weights are fully shared
+    tabm.MLPBackbone(                    # -> (B, k, d)
+        d_in=d, n_blocks=2, d_block=d, dropout=0.1
+    ),
+
+    # Almost all the weights are shared
+    tabm.MLPBackboneMiniEnsemble(        # -> (B, k, d)
+        d_in=d, n_blocks=2, d_block=d, dropout=0.1,
+        k=k, affine_bias=False, affine_scaling_init='normal',
+    ),
+
+    # No weight sharing
+    tabm.LinearEnsemble(d, d_out, k=k),  # -> (B, k, d_out)
+)
+
+x = torch.randn(batch_size, d_in)
+y_pred = model(x)
+assert y_pred.shape == (batch_size, k, d_out)
+```
+
+## Turning an existing model to an efficient ensemble
+
+> [!WARNING]
+> The approach discussed below requires full understanding of all implementation details of both
+> the original model and efficient ensembling, because it does not provide any guarantees on
+> correctness and performance of the obtained models.
+
+Assume that you have an MLP-like model, and you want to quickly evaluate the potential of efficient
+ensembling applied to your model without changing the model's source code. Then, you can create a
+single-model instance and turn it to an efficient ensemble by replacing its layers with their
+ensembled versions. To that end, the package provides the following functions:
+- `tabm.batchensemble_linear_layers_`
+- `tabm.ensemble_linear_layers_`
+- `tabm.ensemble_batchnorm1d_layers_`
+- `tabm.ensemble_layernorm_layers_`
+
+For example, the following code creates a full-fledged ensemble of $k$ independent MLPs:
+
+<!-- test main _ -->
+```python
+d_in = 24
+d = 512
+d_out = 1
+
+# Create one standard MLP backbone.
+backbone = tabm.MLPBackbone(
+    d_in=d_in, n_blocks=3, d_block=d, dropout=0.1
+)
+
+# Turn the one backbone into an efficient ensemble.
+k = 32
+tabm.ensemble_linear_layers_(backbone, k=k)
+
+# Compose the final model.
+model = nn.Sequential(
+    tabm.EnsembleView(k=k),
+    backbone,
+    tabm.LinearEnsemble(d, d_out, k=k),
+)
+assert model(torch.randn(batch_size, d_in)).shape == (batch_size, k, d_out)
+```
+
+# Hyperparameters
+
+## Default model
+
+`TabM.make` allows one to create TabM with the default hyperparameters and overwrite them as needed:
+
+> [!NOTE]
+> The default hyperparameters are not "constant", i.e. they depend on the provided arguments.
+
+<!-- test main _ -->
+```python
+# TabM with default hyperparameters.
+model = TabM.make(n_num_features=16, d_out=1)
+
+# TabM with custom n_blocks
+# and all other hyperparameters set to their default values.
+model = TabM.make(n_num_features=16, d_out=1, n_blocks=2)
+```
+
+## Default optimizer
+
+Currently, for the default TabM, the default optimizer is
+`torch.optim.AdamW(..., lr=0.002, weight_decay=0.0003)`.
+
+## `arch_type`
+
+*TL;DR: by default, use TabM.*
+
+- `'tabm'` is the default value and is expected to provide the best performance in most cases.
+- `'tabm-mini'` may result in a faster training and/or inference without a significant performance
+  drop, though this option may require a bit more precision when choosing `d_block` and `n_blocks`
+  for a given `k`. `'tabm-mini'` can occasionally provide slightly better performance if the
+  higher degree of regularization turns out to be beneficial for a given task.
+- `'tabm-packed'` is implemented only for completeness. In most cases, it results in a slower,
+  heavier and weaker model.
+
+## `k`
+
+> [!TIP]
+> All the following points about `k`, except for the first one, are inspired by Figure 7 from the
+> paper (arXiv v3).
+
+- If you want to tune `k`, consider running independent hyperparameter tuning runs with different,
+  but *fixed* values of `k`. The motivation is that changing `k` can affect optimal
+  values of other hyperparameters, which can hinder the hyperparameter tuning process if `k` is
+  tuned together with other hyperparameters.
+- For given depth and width, increasing `k` up to a certain threshold can improve performance.
+  After the threshold, the performance may not improve and can even become worse. This effect is
+  more pronounced for `arch_type='tabm-mini'` (not shown in the figure).
+- For exploration purposes, one can use lower values of `k` (i.e. 24 or 16) and still get
+  competitive results (though changing `k` can require retuning other hyperparameters).
+- As a rule of thumb, if you increase `k`, consider increasing `d_block` or `n_block` (or both).
+  The intuition is that, because of the weight sharing, the larger ensemble size may require
+  larger base architecture to successfully accommodate `k` submodels.
+- If the size of your dataset is similar to datasets used in the paper,
+  `n_blocks=1` should usually be avoided unless you have high budget on hyperparameter tuning.
+
+## `num_embeddings`
+
+- Historically, the piecewise-linear embeddings seem to be a more popular choice among users.
+  However, on some tasks, the periodic embeddings can be a better choice.
+- The documentation of the `rtdl_num_embeddings` package provides recommendations on hyperparameter
+  tuning for embeddings.
+
+## Initialization
+
+This section provides an overview of initialization-related options that one has to specify when
+using API other than `TabM.make`.
+
+> [!NOTE]
+> The extent to which the initialization-related settings affect the task performance depends on
+> a task at hand. Usually, these settings are about uncovering the full potential of TabM, not
+> about avoiding some failure modes.
+
+**TabM-style initialization**. `tabm_init` is a flag triggering the TabM-style initialization of
+BatchEnsemble-based models. In short, this is a conservative initialization strategy making the $k$
+submodels different from each other only in the very first ensembled layer, but equal in all other
+layers *at initialization*. On benchmarks, `tabm_init=True` showed itself as a better default
+strategy. If the $k$ submodels collapse to the same model during training, try `tabm_init=False`.
+
+**Initialization of scaling parameters**. The arguments `start_scaling_init`, `scaling_init` and `affine_scaling_init` are all about the same thing in slightly different contexts. TabM uses an
+informal heuristic rule that can be roughly summarized as follows: use `"normal"` if there are
+"non-trivial" modules before the TabM backbone (e.g. `num_embeddings`), and `"random-signs"`
+otherwise. This is not a well-explored aspect of TabM.
+
+**Initialization chunks.** The arguments like `start_scaling_init_chunks` or `scaling_init_chunks`
+trigger a heuristic chunk-based initialization of scaling parameters, where the chunk sizes must sum
+exactly to the backbone input size (i.e. `d_in`.) By default, in TabM, the "chunks" are defined
+simply as feature representation sizes (see the `d_features` variable in `tabm.TabM.__init__`),
+which means that, during the initialization, exactly one random scalar will be sampled per feature.
+In other contexts, it may be unclear how to define chunks. In such cases, one possible approach is
+to start with `None` and, if needed, try to find a better approach by trial and error.
 
 ## Hyperparameter tuning
 
-Use `bin/tune.py` to tune hyperparameters for `bin/model.py`.
-For example, the following commands reproduce the hyperparameter runing of TabM on the California Housing dataset
-(this takes around one hour on NVIDIA A100):
+> [!TIP]
+> The general notes provided above will help you in automatic hyperparameter tuning as well.
+
+It the paper, to tune TabM's hyperparameters, the
+[TPE sampler from Optuna](https://optuna.readthedocs.io/en/stable/reference/samplers/generated/optuna.samplers.TPESampler.html)
+was used with 100 iterations on smaller datasets, and 50 iterations on larger datasets.
+If achieving the highest possible performance is not critical, then 30-50 iterations should result
+in a somewhat reasonable configuration.
+
+The below table provides the hyperparameter distributions used in the paper.
+**Consider changing them based on your setup** and taking previous sections into
+account, especially if the lower number of iterations is used.
+
+| Hyperparameter | TabM                            | TabM w./ `PiecewiseLinearEmbeddings` |
+| :------------- | :------------------------------ | :----------------------------------- |
+| `k`            | `Const[32]` (not tuned)         | Same as for TabM                     |
+| `n_blocks`     | `UniformInt[1, 5]`              | `UniformInt[1, 4]`                   |
+| `d_block`      | `UniformInt[64, 1024, step=16]` | Same as for TabM                     |
+| `lr`           | `LogUniform[1e-4, 5e-3]`        | Same as for TabM                     |
+| `weight_decay` | `{0, LogUniform[1e-4, 1e-1]}`   | Same as for TabM                     |
+| `n_bins`       | N/A                             | `UniformInt[2, 128]`                 |
+| `d_embedding`  | N/A                             | `UniformInt[8, 32, step=4]`          |
+
+# Practical notes
+
+## Inference efficiency
+
+As shown in Section 5.2 of the paper, one can prune a significant portion of TabM's submodels
+(i.e. reduce `k`) *after* the training at the cost of a minor performance drop. In theory, there are
+more advanced algorithms for selecting the best subset of submodels, such as the
+[one by Caruana et al.](https://automl.github.io/amltk/latest/api/amltk/ensembling/weighted_ensemble_caruana/),
+but they were not analyzed in the paper. Also, keep in mind that selecting, say, `k=8` submodels
+after training with `k=32` will result in a better model than simply training with `k=8`.
+
+# API
+
+To explore the package API and docstrings, do one of the following:
+- Clone this repository and run `make docs`.
+- On GitHub, open the source code and use the symbols panel.
+- In VSCode, open the source code and use the Outline view.
+
+To list all available items without cloning or installing anything, run the following snippet:
 
 ```
-mkdir -p exp/reproduce/tabm/california
-cp exp/tabm/california/0-tuning.toml exp/reproduce/tabm/california
-python bin/tune.py exp/reproduce/tabm/california/0-tuning.toml --continue
-```
+uv run --no-project --with tabm python -c """
+import tabm
 
-## Evaluation
-
-Use `bin/evaluate.py` to train a model under multiple random seeds.
-For example, the following command evaluates the tuned TabM from the previous section:
-
-```
-python bin/evaluate.py exp/reproduce/tabm/california/0-tuning
-```
-
-To evaluate a manually composed config for `bin/model.py`,
-create a directory with a name ending with `-evaluation`,
-and put the config with the name `0.toml` in it.
-Then, pass the directory as the argument to `bin/evaluate.py`.
-For example:
-
-```
-# The config is stored at exp/<any/path>/0-evaluation/0.toml
-python bin/evaluate.py exp/<any/path>/0-evaluation --function "bin.model.main"
-```
-
-## Ensembling
-
-Use `bin/ensemble.py` to compute metrics for an ensemble of *already trained* models.
-For example, the following command evaluates an ensemble of the evaluated TabM from the previous section:
-
-```
-python bin/ensemble.py exp/reproduce/tabm/california/0-evaluation
-```
-
-## Automating all of the above
-
-Use `bin/go.py` to run hyperparameter tuning, evaluation and ensembling with a single command.
-For example, all the above steps can be implemented as follows:
-
-```
-mkdir -p exp/reproduce/tabm-go/california
-cp exp/tabm/california/0-tuning.toml exp/reproduce/tabm-go/california
-
-python bin/go.py exp/reproduce/tabm-go/california/0-tuning --continue
-```
-
-# Adding new datasets
-
-*New datasets must follow the layout and NumPy data types of the datasets in `data/`.*
-
-Let's assume your dataset is called `my-dataset`.
-Then, create the `data/my-dataset` directory with the following layout:
-
-```
-data/
-  my-dataset/
-    # Continuous features, if presented
-    # NumPy data type: np.float32
-    X_num_train.npy
-    X_num_val.npy
-    X_num_test.npy
-
-    # Categorical features, if presented
-    # NumPy data type: np.str_ (i.e. string)
-    X_cat_train.npy
-    X_cat_val.npy
-    X_cat_test.npy
-
-    # Binary features, if presented
-    # NumPy data type: np.float32
-    X_bin_train.npy
-    X_bin_val.npy
-    X_bin_test.npy
-
-    # Labels
-    # NumPy data type (regression): np.float32
-    # NumPy data type (classification): np.int64
-    Y_train.npy
-    Y_val.npy
-    Y_test.npy
-
-    # Dataset information in the JSON format:
-    # {
-    #     (required) "task_type": < "regression" or "binclass" or "multiclass"     >,
-    #     (optional) "name":      < The full dataset name, e.g. "My Dataset"       >,
-    #     (optional) "id":        < Any string unique across all datasets in data/ >
-    # 
-    # }
-    info.json
-
-    # Just an empty file
-    READY
-```
-
-# How to cite
-
-```
-@inproceedings{gorishniy2024tabm,
-    title={{TabM: Advancing Tabular Deep Learning With Parameter-Efficient Ensembling}},
-    author={Yury Gorishniy and Akim Kotelnikov and Artem Babenko},
-    booktitle={ICLR},
-    year={2025},
-}
+for x in sorted(
+    x
+    for x in dir(tabm)
+    if getattr(getattr(tabm, x), '__module__', None) == 'tabm'
+    and not x.startswith('_')
+):
+    print(x)
+"""
 ```

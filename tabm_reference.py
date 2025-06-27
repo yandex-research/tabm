@@ -1,8 +1,20 @@
 # License: https://github.com/yandex-research/tabm/blob/main/LICENSE
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# DEPRECATED
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+import warnings
+
+warnings.warn(
+    "tabm_reference.py is deprecated, use the `tabm` package instead:"
+    " https://github.com/yandex-research/tabm",
+    DeprecationWarning,
+)
+
 # NOTE
 # The minimum required versions of the dependencies are specified in README.md.
 
+# ruff: noqa: E402
 import itertools
 from typing import Any, Literal
 

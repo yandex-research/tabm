@@ -1,13 +1,105 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+authors = [{ name = "Yury Gorishniy" }]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "torch>=1.12,<3",
+    "rtdl_num_embeddings>=0.0.12,<0.1",
+    "typing_extensions>=4.6.0,<5",
+]
+dynamic = ["version", "description"]
+keywords = [
+    "artificial intelligence",
+    "deep learning",
+    "library",
+    "python",
+    "pytorch",
+    "research",
+    "torch",
+    "tabular",
+    "tabular data",
+]
+license = { file = "LICENSE" }
+name = "tabm"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = [
+    "delu>=0.0.26",
+    "flit>=3.12.0",
+    "ipython>=8.18.1",
+    "ipywidgets>=8.1.5",
+    "jupyterlab>=4.3.6",
+    "matplotlib>=3.9.4",
+    "mypy>=1.15.0",
+    "notebook>=7.3.3",
+    "numpy>=1.26.4,<2",
+    "pandas>=2.2.3",
+    "pdoc>=15.0.1",
+    "pre-commit-hooks>=5.0.0",
+    "pytest>=8.3.5",
+    "ruff>=0.11.4",
+    "scikit-learn>=1.6.1",
+    "tqdm>=4.67.1",
+    "typos>=1.31.1",
+    "xdoctest>=1.2.0",
+]
+
+[project.urls]
+Code = "https://github.com/yandex-research/tabm"
+Documentation = "https://github.com/yandex-research/tabm/tree/main/README.md"
+
+[tool.flit.module]
+name = "tabm"
+
+[tool.flit.sdist]
+exclude = ["paper"]
+
 [tool.mypy]
 check_untyped_defs = true
 ignore_missing_imports = true
+exclude = ["^local/*"]
+
+[tool.pyright]
+exclude = [
+    # Default rules
+    '**/node_modules',
+    '**/__pycache__',
+    '**/.*',
+    # Custom rules
+    "local",
+]
+venv = ".venv"
+venvPath = "."
 
 [tool.ruff]
-target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
-extend-select = ["RUF", "UP", "E501", "E731"]
+extend-select = ["ARG", "RUF", "UP", "E501", "E731"]
 
 [tool.ruff.format]
 quote-style = "single"
+
+[tool.typos.default.extend-words]
+TPE = "TPE"
+arange = "arange"
+
+[tool.uv]
+constraint-dependencies = [
+    "torch==1.12; sys_platform == 'darwin'",
+    "torch==1.13; sys_platform == 'linux'",
+    "rtdl_num_embeddings==0.0.12",
+    "typing_extensions==4.6.0",
+]
+package = true
