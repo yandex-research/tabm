@@ -301,21 +301,21 @@ exit
 With Micromamba:
 
 ```
-micromamba create -f environment.yaml
+micromamba create --file environment.yaml
 micromamba activate tabm
 ```
 
 With Mamba:
 
 ```
-mamba create -f environment.yaml
+mamba create --file environment.yaml
 mamba activate tabm
 ```
 
 With Conda:
 
 ```
-conda create -f environment.yaml -n tabm
+conda create --file environment.yaml -n tabm
 conda activate tabm
 ```
 
