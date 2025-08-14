@@ -1,7 +1,7 @@
 # License: https://github.com/yandex-research/tabm/blob/main/LICENSE
 """TabM: Advancing Tabular Deep Learning with Parameter-Efficient Ensembling (ICLR 2025)."""  # noqa: E501
 
-__version__ = '0.0.2.dev0'
+__version__ = '0.0.3'
 
 import abc
 import collections.abc
