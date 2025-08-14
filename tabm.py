@@ -1262,12 +1262,16 @@ class MLPBackboneEnsemble(MLPBackboneEnsembleBase):
     - Output: ``(batch_size, k, d_block)``
     """
 
+    @dataclass(frozen=True)
+    class _Options:
+        k: int
+
     def __init__(self, **kwargs: Unpack[MLPBackboneEnsembleKwargs]) -> None:
         """
         Args:
             kwargs: see `MLPBackboneEnsembleKwargs`.
         """
-        super().__init__(**kwargs, options=None)
+        super().__init__(**kwargs, options=MLPBackboneEnsemble._Options(kwargs['k']))
 
     def get_original_output_shape(self) -> torch.Size:
         return torch.Size((self.blocks[-1][0].weight.shape[-1],))
@@ -1277,11 +1281,10 @@ class MLPBackboneEnsemble(MLPBackboneEnsembleBase):
         index: int,
         in_features: int,
         out_features: int,
-        options: Any,
+        options: _Options,
     ) -> nn.Module:
-        assert options is None, _INTERNAL_ERROR_MESSAGE
         del index
-        return LinearEnsemble(in_features, out_features, k=self.k)
+        return LinearEnsemble(in_features, out_features, k=options.k)
 
     def forward(self, x: Tensor) -> Tensor:
         """Do the forward pass."""
