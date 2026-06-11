@@ -810,14 +810,16 @@ class LayerNormEnsemble(nn.Module):
         Args:
             module: the original module.
             kwargs: the ensemble-specific arguments.
+
+        >>> module = nn.LayerNorm(4, elementwise_affine=False)
+        >>> ensemble = LayerNormEnsemble.from_layernorm(module, k=3)
+        >>> ensemble(torch.randn(2, 3, 4)).shape
+        torch.Size([2, 3, 4])
         """
         kwargs.update((key, getattr(module, key)) for key in nn.LayerNorm.__constants__)
         if module.weight is not None:
             kwargs['dtype'] = module.weight.dtype
             kwargs['device'] = module.weight.device
-        elif module.running_mean is not None:
-            kwargs['dtype'] = module.running_mean.dtype
-            kwargs['device'] = module.running_mean.device
         return LayerNormEnsemble(**kwargs)
 
     @property
