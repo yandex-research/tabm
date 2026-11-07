@@ -815,9 +815,6 @@ class LayerNormEnsemble(nn.Module):
         if module.weight is not None:
             kwargs['dtype'] = module.weight.dtype
             kwargs['device'] = module.weight.device
-        elif module.running_mean is not None:
-            kwargs['dtype'] = module.running_mean.dtype
-            kwargs['device'] = module.running_mean.device
         return LayerNormEnsemble(**kwargs)
 
     @property
